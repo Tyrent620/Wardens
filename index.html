@@ -36,6 +36,8 @@
   .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.34em;text-transform:uppercase;color:var(--brass)}
 
   header.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .wotd-banner{height:clamp(150px,24vw,300px);background-size:cover;background-position:center 28%;position:relative;border-bottom:1px solid var(--line)}
+  .wotd-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,20,33,.15),rgba(6,20,33,.55) 66%,#061625)}
   .hero-inner{display:flex;gap:34px;align-items:center;padding:40px 0 30px;flex-wrap:wrap}
   .crest{width:150px;height:150px;flex:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
   .hero-copy{flex:1;min-width:280px}
@@ -221,11 +223,10 @@
    2) No config                      -> saves to each person's own browser.
    3) Claude preview                 -> holds in memory (won't persist here).
 ============================================================ */
-const KEY='wotd_state_v3';
+const KEY='wotd_state_v4';
 
-/* ---- To sync your whole crew: create a free Firebase Realtime Database,
-        then paste your web config here. It MUST include databaseURL. ---- */
-const firebaseConfig = {
+/* ---- Your crew's Firebase Realtime Database config (synced across all players). ---- */
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDprgzyGsfDycas7D4Rz6lcem0eb_Ey5MU",
   authDomain: "wardens-of-the-deep.firebaseapp.com",
   databaseURL: "https://wardens-of-the-deep-default-rtdb.firebaseio.com",
@@ -234,8 +235,8 @@ const firebaseConfig = {
   messagingSenderId: "694302637410",
   appId: "1:694302637410:web:828f5fb1bddaf11306803b"
 };
-/* ---- Optional: lock the hub behind a word only your crew knows.
-        Set a shared passphrase; leave "" to keep the hall open. ---- */
+
+/* ---- Shared passphrase to enter the hub. Leave "" to remove the lock. ---- */
 const GATE_WORD = "justice felt";
 
 let mode='memory', db=null, dbRef=null, lastSynced='', mem=null, saveTimer=null;
@@ -243,7 +244,7 @@ function localOK(){ try{ localStorage.setItem('__wotd','1'); localStorage.remove
 
 function initStore(){
   if(FIREBASE_CONFIG && FIREBASE_CONFIG.databaseURL && window.firebase){
-    try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); dbRef=db.ref('wardens/state'); mode='firebase'; return; }
+    try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); dbRef=db.ref('wardens/state_v4'); mode='firebase'; return; }
     catch(e){ console.warn('Firebase init failed — falling back to local.', e); }
   }
   mode = localOK() ? 'local' : 'memory';
@@ -289,13 +290,13 @@ function defaults(){ return {
   campaign:{ inGameDate:'1492 DR · Winter in Waterdeep', focus:'Hunt the Dock Ward killer', nextSession:'Set your date' },
   charter:{ creed:"We are the Wardens of the Deep. We give each their due and no more — mercy with weight, justice felt as well as known. We keep faith in our dealings, guard our own as a pack guards its blood, and set in order what falls to our charge. What is buried deep, we bring to light. What we build here will not break when it is tested." },
   heroes:[
-    {id:uid(),name:'Valek',player:'',ancestry:'Earth Genasi',cls:'Paladin — Oath of Thunder',ties:'The Harpers',lvl:4,hp:32,hpMax:32,portrait:'',
+    {id:uid(),name:'Valek',player:'',ancestry:'Earth Genasi',cls:'Paladin — Oath of Thunder',ties:'The Harpers',lvl:4,hp:32,hpMax:32,portrait:'Valek.png',
      hook:"Found on the road with no memory, a great blade at his side and the broken sign of Helm near at hand. He serves Helm through action, not prayer, and means to forge a guild that will not break.",
      secret:"What came before that hour on the road, he does not speak of — perhaps cannot."},
-    {id:uid(),name:'Nyx',player:'',ancestry:'Human',cls:'Rogue / tinkerer',ties:"Bregan D'aerthe (past)",lvl:4,hp:27,hpMax:27,portrait:'',
+    {id:uid(),name:'Nyx',player:'',ancestry:'Human',cls:'Rogue / tinkerer',ties:"Bregan D'aerthe (past)",lvl:4,hp:27,hpMax:27,portrait:'Nyx.png',
      hook:"A Southern Ward orphan who learned to steal before he could read. A thief's hands, a tinkerer's mind, and a knack for telekinetic tricks — loyal to his chosen family above all.",
      secret:"At least one persistent enemy from his Bregan D'aerthe days still remembers his name."},
-    {id:uid(),name:'Leafy',player:'',ancestry:'Elf (shapeshifter)',cls:'Druid — Circle of the Moon',ties:'The wilds / Emerald Enclave',lvl:4,hp:30,hpMax:30,portrait:'',
+    {id:uid(),name:'Leafy',player:'',ancestry:'Elf (shapeshifter)',cls:'Druid — Circle of the Moon',ties:'The wilds / Emerald Enclave',lvl:4,hp:30,hpMax:30,portrait:'Leafy.png',
      hook:"Raised by dire wolves in the High Forest; a shapeshifter who wears a pale elf's form (born Levi). Reads the world by instinct and loyalty, and fights best with four legs and a death roll.",
      secret:"The last of his wolves is gone. The pack he guards now is all he has left."},
     {id:uid(),name:'Bodrin',player:'',ancestry:'Dwarf',cls:'Monk',ties:'',lvl:4,hp:30,hpMax:30,portrait:'',
@@ -440,14 +441,49 @@ let state, active='charter';
 function uid(){return Math.random().toString(36).slice(2,9)}
 function esc(s){return (s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 
+/* ---- Image finder: tries the repo root and common folders so portraits/banner
+        work no matter where the PNGs live. Absolute URLs are used as-is. ---- */
+const IMG_CANDIDATES = ['', 'images/', 'img/', 'assets/', 'art/', 'portraits/'];
+function resolveImg(src, cb){
+  if(!src){ cb(null); return; }
+  if(/^(https?:|\/|data:)/i.test(src) || src.includes('/')){
+    const im=new Image(); im.onload=()=>cb(src); im.onerror=()=>cb(null); im.src=src; return;
+  }
+  let i=0;
+  (function tryNext(){
+    if(i>=IMG_CANDIDATES.length){ cb(null); return; }
+    const url=IMG_CANDIDATES[i++]+src;
+    const im=new Image(); im.onload=()=>cb(url); im.onerror=tryNext; im.src=url;
+  })();
+}
+function mountBanner(){
+  const header=document.querySelector('header.hero');
+  if(!header || header.querySelector('.wotd-banner')) return;
+  resolveImg('Group.png', url=>{
+    if(!url) return;
+    const b=document.createElement('div');
+    b.className='wotd-banner';
+    b.style.backgroundImage="url('"+url+"')";
+    header.insertBefore(b, header.firstChild);
+  });
+}
+
 (async function(){
   initStore();
-  const saved=await readStore();
-  state = saved || defaults();
-  if(mode==='firebase' && !saved){ try{ await dbRef.set(state); }catch(e){} }
-  lastSynced=JSON.stringify(state);
-  buildTabs(); renderStatus(); render(); setFooter(); gateInit();
-  if(mode==='firebase'){
+  // Render immediately with defaults so the page ALWAYS appears, even if storage is slow.
+  state = defaults();
+  buildTabs(); renderStatus(); render(); setFooter(); gateInit(); mountBanner();
+  // Hydrate from the store in the background, with a timeout so a stalled DB can't hang us.
+  let saved=null;
+  try{ saved = await Promise.race([ readStore(), new Promise(r=>setTimeout(()=>r('__timeout'),4500)) ]); }
+  catch(e){ saved=null; }
+  if(saved && saved!=='__timeout'){
+    state=saved; lastSynced=JSON.stringify(state); renderStatus(); render();
+  } else {
+    lastSynced=JSON.stringify(state);
+    if(saved===null && mode==='firebase'){ try{ await dbRef.set(state); }catch(e){} } // seed an empty DB (never on timeout)
+  }
+  if(mode==='firebase' && dbRef){
     dbRef.on('value', snap=>{
       if(!snap.exists()) return;
       const incoming=JSON.stringify(snap.val());
@@ -480,6 +516,9 @@ function render(){
     factions:renderFactions,contracts:renderContracts,contacts:renderContacts,map:renderMap,talk:renderTalk
   })[active]()}</div>`;
   wire();
+  document.querySelectorAll('.avatar[data-portrait]').forEach(el=>{
+    resolveImg(el.dataset.portrait, url=>{ if(url){ el.style.backgroundImage="url('"+url+"')"; el.textContent=''; } });
+  });
 }
 function head(t,p,btn){return `<div class="sec-head"><div><h2>${t}</h2><p>${p}</p></div>${btn||''}</div>`}
 
@@ -497,7 +536,7 @@ function renderCharter(){
 }
 function renderRoster(){
   const cards=state.heroes.map(h=>{
-    const av=h.portrait?`style="background-image:url('${esc(h.portrait)}')"`:'';
+    const av=h.portrait?`data-portrait="${esc(h.portrait)}"`:'';
     const init=esc((h.name||'?').trim().charAt(0).toUpperCase());
     const pct=h.hpMax?Math.max(0,Math.min(100,Math.round(h.hp/h.hpMax*100))):0;
     const tie=h.ties?`<span class="tag" style="margin-top:8px">${esc(h.ties)}</span>`:'';
@@ -749,24 +788,6 @@ function quoteModal(){
     <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">Enshrine it</button></div>`);
   modal.querySelector('#s').onclick=()=>{const d=collect();if(d.text)state.quotes.unshift({id:uid(),...d});closeModal();save();};
 }
-</script>
-<!-- Group banner -->
-<script>
-(function(){
-  var IMG_BASE = "";     // <-- the folder your PNGs live in. Use "" if they're at the repo root.
-  var FILE = "Group.png";       // the banner image
-  var css = document.createElement('style');
-  css.textContent = ".wotd-banner{height:clamp(150px,24vw,300px);background-size:cover;background-position:center 28%;position:relative;border-bottom:1px solid var(--line,#c69a4c44);display:none}.wotd-banner::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,20,33,.12),rgba(6,20,33,.5) 66%,#061625)}";
-  document.head.appendChild(css);
-  var header = document.querySelector('header.hero');
-  if(!header || header.querySelector('.wotd-banner')) return;
-  var b = document.createElement('div');
-  b.className = 'wotd-banner';
-  header.insertBefore(b, header.firstChild);
-  var url = IMG_BASE + FILE, img = new Image();
-  img.onload = function(){ b.style.backgroundImage = "url('" + url + "')"; b.style.display = 'block'; };
-  img.src = url;
-})();
 </script>
 </body>
 </html>
