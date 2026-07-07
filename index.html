@@ -59,6 +59,16 @@
   .tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:linear-gradient(90deg,var(--brass),var(--verdigris))}
 
   main{padding:34px 0 90px;min-height:60vh}
+  #searchWrap{position:relative;max-width:1120px;margin:20px auto 0;padding:0 22px}
+  #searchBox{width:100%}
+  #searchResults{position:absolute;left:22px;right:22px;top:100%;z-index:25;background:linear-gradient(180deg,var(--deep),var(--abyss));border:1px solid var(--line);border-radius:12px;margin-top:6px;max-height:60vh;overflow:auto;box-shadow:var(--shadow);display:none}
+  #searchResults.on{display:block}
+  .sr-item{padding:10px 14px;border-bottom:1px solid var(--line-soft);cursor:pointer}
+  .sr-item:last-child{border-bottom:none}
+  .sr-item:hover{background:rgba(79,179,160,.08)}
+  .sr-tab{font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--brass)}
+  .sr-title{color:var(--foam);font-family:var(--disp);font-size:.98rem;margin-top:1px}
+  .sr-snip{color:var(--muted);font-size:.83rem;margin-top:1px}
   .panel{display:none;animation:rise .4s ease}
   .panel.on{display:block}
   @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -89,6 +99,9 @@
   .tag.enemy{color:var(--blood);border-color:rgba(184,72,47,.5)}
   .tag.neutral{color:var(--brass);border-color:rgba(198,154,76,.5)}
   .empty{border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted);font-style:italic}
+  .armory-item .qty{font-family:var(--mono);font-size:.68rem;color:var(--brass);border:1px solid var(--line);border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap}
+  .armory-item.magical{border-color:rgba(198,154,76,.55);box-shadow:0 0 22px -10px rgba(198,154,76,.5),var(--shadow)}
+  .armory-item.magical h3{color:var(--brass)}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .spread{justify-content:space-between}
   .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1}
@@ -209,8 +222,12 @@
 </header>
 
 <nav class="tabs"><div class="wrap tabrow" id="tabrow"></div></nav>
+<div class="wrap" id="searchWrap">
+  <input id="searchBox" placeholder="Search the whole hub \u2014 NPCs, leads, items, quotes\u2026" autocomplete="off">
+  <div id="searchResults"></div>
+</div>
 <main class="wrap" id="main"></main>
-<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 6</span></footer>
+<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 8</span></footer>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="save-flash" id="saveFlash">✓ Saved to the guild ledger</div>
@@ -417,7 +434,16 @@ function defaults(){ return {
       {id:uid(),name:'Themed & adventurer networking nights',done:false},
       {id:uid(),name:'A neutral, Harper-friendly gathering place',done:false},
       {id:uid(),name:'Grand reopening',done:false}
-    ]},
+    ],
+    ledger:[] },
+  guild:[
+    {id:uid(),name:'Valek',role:'Paladin, Oath of Thunder',rank:'Founder',notes:"Named the purpose the others hadn't yet spoken aloud."},
+    {id:uid(),name:'Nyx',role:'Rogue & tinkerer',rank:'Founder',notes:''},
+    {id:uid(),name:'Leafy',role:'Druid of the Moon',rank:'Founder',notes:''},
+    {id:uid(),name:'Bodrin',role:'Dwarf monk',rank:'Founder',notes:''},
+    {id:uid(),name:'The Fiddlewicks',role:'Tavern staff',rank:'Staff',notes:'Halfling siblings + two friends running Trollskull Manor.'},
+    {id:uid(),name:'Three Strings',role:'Harper bard',rank:'Ally',notes:"Feeds the crew tidings; not sworn, but reliable."}
+  ],
   quotes:[
     {id:uid(),text:'"I cast Detect Magic on the tavern. \u2026It\u2019s haunted." \u2014 everyone, immediately',by:'The table'},
     {id:uid(),text:'"I learned that from my old friend, Gimli, in another life."',by:'Bodrin'},
@@ -428,13 +454,28 @@ function defaults(){ return {
     {id:uid(),text:'"Bodrin, brown belly balance beard, at your service."',by:'Bodrin'},
     {id:uid(),text:'"I got attacked by a life-sized shit. I sat down. It ate my ass. I jumped out the window."',by:'Valek, recapping the toilet ooze'}
   ],
+  armory:[
+    {id:uid(),name:'Swords & scimitars',category:'Weapons',qty:22,where:'Manor stores',magical:false,notes:"Taken from the captured Field Ward thugs — earmarked to arm future guild staff."},
+    {id:uid(),name:'Light crossbows',category:'Weapons',qty:22,where:'Manor stores',magical:false,notes:"Same haul as the blades. A real start on a guild armory."},
+    {id:uid(),name:'Silvered weapons',category:'Weapons',qty:1,where:'Carried',magical:false,notes:"The crew's own blades and ammo, silvered for the Shard Shunner wererats."},
+    {id:uid(),name:'Strange black-powder weapon',category:'Weapons',qty:1,where:'Nyx',magical:false,notes:"A firearm looted from a Zhentarim lieutenant. Nyx is tinkering with it."},
+    {id:uid(),name:'Bone-handled dagger',category:'Weapons',qty:1,where:'Manor stores',magical:false,notes:"Recovered in the Xanathar sewers."},
+    {id:uid(),name:'Potions of poison resistance',category:'Potions',qty:3,where:'Party',magical:true,notes:"Valek & Bodrin already resist poison, so the others carry these."},
+    {id:uid(),name:'Assorted healing potions',category:'Potions',qty:1,where:'Party',magical:true,notes:"Restocked between jobs — keep the count current."},
+    {id:uid(),name:'Necklace of 12 golden pearls',category:'Magic Items',qty:1,where:'Manor vault',magical:true,notes:"Stamped with the Xanathar eye. Detected as magical — ask the Blackstaff what it does."},
+    {id:uid(),name:'Xanathar keyring',category:'Keys',qty:1,where:'Party',magical:false,notes:"Four keys that opened doors and cells in the Xanathar hideout."},
+    {id:uid(),name:'Ring of 7 keys',category:'Keys',qty:1,where:'Party',magical:false,notes:"One key is etched with a rat's mouth — significance unknown."},
+    {id:uid(),name:'Gazer eyes',category:'Misc',qty:1,where:'Nyx',magical:false,notes:"Harvested from beholderkin in the sewers."},
+    {id:uid(),name:'Fishbone talisman',category:'Misc',qty:1,where:'Manor stores',magical:false,notes:"A Xanathar affiliation token pulled off a corpse."},
+    {id:uid(),name:"Lif's recipe book",category:'Treasure',qty:1,where:'Manor cellar',magical:false,notes:"20–30 unique brews from the manor's murdered founder — the key to the house ale."}
+  ],
   suggestions:[ {id:uid(),text:'Example: a dice roller, a "next session" countdown, a search box… delete this and drop your own ideas.',by:'Claude',status:'Idea'} ],
   mapUrl:'https://www.aidedd.org/atlas/waterdeep'
 }; }
 
 const TABS=[
-  ['charter','Charter'],['suggest','Suggestions'],['roster','Roster'],['chronicle','Chronicle'],['manor','The Manor'],['leads','Leads'],
-  ['treasury','Treasury'],['factions','Factions'],['contracts','Contracts'],
+  ['charter','Charter'],['suggest','Suggestions'],['roster','Roster'],['guild','The Guild'],['chronicle','Chronicle'],['manor','The Manor'],['leads','Leads'],
+  ['treasury','Treasury'],['armory','Armory'],['factions','Factions'],['contracts','Contracts'],
   ['contacts','Contacts'],['map','Map'],['talk','Table Talk']
 ];
 let state, active='charter';
@@ -473,7 +514,7 @@ function mountBanner(){
   initStore();
   // Render immediately with defaults so the page ALWAYS appears, even if storage is slow.
   state = defaults();
-  buildTabs(); renderStatus(); render(); setFooter(); gateInit(); mountBanner();
+  buildTabs(); renderStatus(); render(); setFooter(); gateInit(); mountBanner(); wireSearch();
   // Hydrate from the store in the background, with a timeout so a stalled DB can't hang us.
   let saved=null;
   try{ saved = await Promise.race([ readStore(), new Promise(r=>setTimeout(()=>r('__timeout'),4500)) ]); }
@@ -513,8 +554,8 @@ function renderStatus(){
 
 function render(){
   document.getElementById('main').innerHTML=`<div class="panel on">${({
-    charter:renderCharter,roster:renderRoster,chronicle:renderChronicle,manor:renderManor,leads:renderLeads,treasury:renderTreasury,
-    factions:renderFactions,contracts:renderContracts,contacts:renderContacts,map:renderMap,talk:renderTalk,suggest:renderSuggest
+    charter:renderCharter,roster:renderRoster,chronicle:renderChronicle,manor:renderManor,leads:renderLeads,treasury:renderTreasury,guild:renderGuild,
+    factions:renderFactions,contracts:renderContracts,contacts:renderContacts,map:renderMap,talk:renderTalk,suggest:renderSuggest,armory:renderArmory
   })[active]()}</div>`;
   wire();
   document.querySelectorAll('.avatar[data-portrait]').forEach(el=>{
@@ -522,6 +563,48 @@ function render(){
   });
 }
 function head(t,p,btn){return `<div class="sec-head"><div><h2>${t}</h2><p>${p}</p></div>${btn||''}</div>`}
+
+function buildSearchIndex(){
+  const idx=[], push=(tab,title,snip)=>{ if(title) idx.push({tab,title:String(title),snip:snip?String(snip):''}); };
+  (state.heroes||[]).forEach(h=>push('roster',h.name,[h.ancestry,h.cls,h.hook].filter(Boolean).join(' \u00b7 ')));
+  (state.guild||[]).forEach(m=>push('guild',m.name,[m.rank,m.role,m.notes].filter(Boolean).join(' \u00b7 ')));
+  (state.chronicle||[]).forEach(e=>push('chronicle',e.title,e.body));
+  (state.contacts||[]).forEach(c=>push('contacts',c.name,[c.role,c.note].filter(Boolean).join(' \u2014 ')));
+  (state.poi||[]).forEach(p=>push('leads',p.who,p.desc));
+  (state.clues||[]).forEach(c=>push('leads','Lead',c.text));
+  (state.contracts||[]).forEach(q=>push('contracts',q.title,[q.status,q.note].filter(Boolean).join(' \u2014 ')));
+  (state.factions||[]).forEach(f=>push('factions',f.name,f.tag));
+  (state.armory||[]).forEach(i=>push('armory',i.name,[i.where,i.notes].filter(Boolean).join(' \u2014 ')));
+  (state.quotes||[]).forEach(x=>push('talk',x.text,x.by));
+  (state.suggestions||[]).forEach(s=>push('suggest',s.text,s.status));
+  ((state.treasury&&state.treasury.ledger)||[]).forEach(l=>push('treasury',l.label,(l.type==='out'?'\u2212':'+')+l.amt+' gp'));
+  (state.contracts||[]);
+  return idx;
+}
+function doSearch(qy){
+  const box=document.getElementById('searchResults'); if(!box) return;
+  const q=(qy||'').trim().toLowerCase();
+  if(q.length<2){ box.classList.remove('on'); box.innerHTML=''; return; }
+  const hits=buildSearchIndex().filter(r=>(r.title+' '+r.snip).toLowerCase().includes(q)).slice(0,25);
+  const tabName=k=>((TABS.find(t=>t[0]===k)||[])[1])||k;
+  if(!hits.length){ box.innerHTML=`<div class="sr-item" style="cursor:default"><div class="sr-snip">No matches.</div></div>`; box.classList.add('on'); return; }
+  box.innerHTML=hits.map(h=>`<div class="sr-item" data-goto="${h.tab}">
+    <div class="sr-tab">${esc(tabName(h.tab))}</div>
+    <div class="sr-title">${esc(h.title)}</div>
+    ${h.snip?`<div class="sr-snip">${esc(h.snip.length>110?h.snip.slice(0,110)+'\u2026':h.snip)}</div>`:''}</div>`).join('');
+  box.querySelectorAll('[data-goto]').forEach(el=>el.onclick=()=>{
+    active=el.dataset.goto; buildTabs(); render(); box.classList.remove('on');
+    document.getElementById('searchBox').value='';
+    window.scrollTo({top:document.querySelector('nav').offsetTop-4,behavior:'smooth'});
+  });
+  box.classList.add('on');
+}
+function wireSearch(){
+  const sb=document.getElementById('searchBox'); if(!sb) return;
+  sb.oninput=()=>doSearch(sb.value);
+  sb.onfocus=()=>{ if(sb.value.trim().length>=2) doSearch(sb.value); };
+  sb.onblur=()=>setTimeout(()=>{const b=document.getElementById('searchResults'); if(b)b.classList.remove('on');},200);
+}
 
 function renderCharter(){
   const sigs=state.heroes.map(h=>`<span class="sig">${esc(h.name)}</span>`).join('');
@@ -591,6 +674,16 @@ function renderTreasury(){
   return head('Guild Treasury','The Wardens\u2019 coffer. Log what comes in and what goes out; set a savings goal if you\u2019re building toward something.',
     `<button class="btn sm" data-set-goal>Set goal</button>`)+
     `<div class="coffer"><div class="lbl">In the coffer</div><div class="amt">${held.toLocaleString()} gp</div>${goalBar}</div>
+     <div class="card" style="margin-top:18px">
+       <div class="sub">Loot splitter</div>
+       <div class="row" style="margin-top:10px;gap:12px">
+         <label class="fld" style="flex:1;margin:0"><span class="lbl">Haul (gp)</span><input class="mono" type="number" id="lootTotal" value="0"></label>
+         <label class="fld" style="flex:1;margin:0"><span class="lbl">Shares</span><input class="mono" type="number" id="lootShares" value="4"></label>
+         <label class="fld" style="flex:1;margin:0"><span class="lbl">Guild cut %</span><input class="mono" type="number" id="lootCut" value="0"></label>
+       </div>
+       <div id="lootResult" class="mono" style="margin-top:4px;font-size:.92rem;color:var(--parchment)"></div>
+       <button class="btn sm" id="lootPost" style="margin-top:10px">Add guild cut to treasury</button>
+     </div>
      <div class="card ledger" style="margin-top:18px">
        <div class="row spread"><h3>Ledger</h3><button class="btn sm" data-add-led>+ Entry</button></div>
        <div style="margin-top:8px">${lines}</div></div>`;
@@ -681,7 +774,46 @@ function renderManor(){
         <div class="sub">History</div>
         <p style="margin:6px 0 0;font-size:.92rem">Once an orphanage run by the hag Mother Marcella, who preyed on the children. Lif and Dina escaped; Lif later bought the manor to redeem it before he was murdered. The family\u2019s prime suspect is an orphan named Amber Goodleaf (an alias).</p>
       </div>
-    </div>`;
+    </div>`+
+    (function(){
+      const led=state.manor.ledger||[];
+      const total=led.reduce((a,b)=>a+(+b.profit||0),0);
+      const maxP=Math.max(1,...led.map(e=>+e.profit||0));
+      const bars=led.map(e=>`<div style="flex:1;min-width:40px;text-align:center;position:relative">
+          <div style="height:96px;display:flex;align-items:flex-end;justify-content:center">
+            <div title="${esc(e.label)}: ${(+e.profit||0)} gp" style="width:62%;height:${Math.max(3,Math.round((+e.profit||0)/maxP*96))}px;background:linear-gradient(180deg,var(--brass),var(--brass-dim));border-radius:3px 3px 0 0"></div>
+          </div>
+          <div class="mono" style="font-size:.62rem;color:var(--verdigris);margin-top:4px">${(+e.profit||0)}</div>
+          <div class="mono" style="font-size:.58rem;color:var(--muted)">${esc(e.label)}</div>
+          <button class="del" data-del-tled="${e.id}" style="font-size:.72rem;margin-top:2px">\u2715</button>
+        </div>`).join('');
+      return `<div class="card" style="margin-top:16px">
+        <div class="row spread"><div><div class="sub">Tavern ledger</div><div class="mono" style="font-size:.82rem;color:var(--brass);margin-top:4px">Total earned: ${total.toLocaleString()} gp</div></div><button class="btn sm" data-add-tled>+ Log a tenday</button></div>
+        ${led.length?`<div class="row" style="align-items:flex-end;gap:8px;margin-top:12px;overflow-x:auto">${bars}</div>`:`<p style="color:var(--muted);font-size:.86rem;font-style:italic;margin:10px 0 0">No tendays logged yet \u2014 add one each time the tavern closes out a tenday, and a profit chart builds here.</p>`}
+      </div>`;
+    })();
+}
+
+function renderGuild(){
+  const RANKS=['Founder','Warden','Officer','Member','Initiate','Staff','Ally','Recruit'];
+  const members=state.guild||[];
+  const byRank={}; members.forEach(m=>{const r=m.rank||'Member'; (byRank[r]=byRank[r]||[]).push(m);});
+  let body='';
+  RANKS.forEach(r=>{
+    const list=byRank[r]; if(!list||!list.length) return;
+    body+=`<div class="eyebrow" style="margin:20px 0 10px">${r}${list.length>1?'s':''}</div><div class="grid g3">`+
+      list.map(m=>`<div class="card">
+        <button class="del" data-del-mem="${m.id}" style="position:absolute;right:10px;top:10px">\u2715</button>
+        <h3 style="font-size:1.05rem;padding-right:24px">${esc(m.name)}</h3>
+        <div class="sub">${esc(m.role||'')}</div>
+        ${m.notes?`<p style="margin:8px 0 0;font-size:.86rem;color:var(--parchment)">${esc(m.notes)}</p>`:''}
+        <div class="row" style="margin-top:10px"><button class="btn sm" data-edit-mem="${m.id}">Edit</button></div>
+      </div>`).join('')+`</div>`;
+  });
+  if(!members.length) body=`<div class="empty">No members yet. Add the Wardens, their hirelings, and sworn allies.</div>`;
+  return head('The Guild','The Wardens of the Deep, ranked \u2014 founders up top, then officers, members, staff, and allies as the company grows.',
+    `<button class="btn gold" data-add-mem>+ Add member</button>`)+
+    `<div class="mono" style="font-size:.8rem;color:var(--verdigris);margin-bottom:2px">${members.length} on the roll</div>${body}`;
 }
 
 function renderSuggest(){
@@ -696,6 +828,33 @@ function renderSuggest(){
   }).join('') || `<div class="empty">No suggestions yet. Drop ideas here \u2014 features, fixes, wild stuff \u2014 and Tyler will build them.</div>`;
   return head('Suggestions','A scratchpad for the crew: what should this site do next? Add ideas, mark what\u2019s building, and they\u2019ll get picked up. (Temporary \u2014 we\u2019ll retire this once the wishlist is done.)',
     `<button class="btn gold" data-add-sug>+ Add idea</button>`)+`<div class="grid g2">${items}</div>`;
+}
+
+function renderArmory(){
+  const CATS=['Weapons','Armor','Potions','Scrolls','Magic Items','Keys','Treasure','Misc'];
+  const items=state.armory||[];
+  const totalQty=items.reduce((a,b)=>a+(+b.qty||1),0);
+  const magic=items.filter(i=>i.magical).length;
+  let body='';
+  CATS.forEach(cat=>{
+    const inCat=items.filter(i=>(i.category||'Misc')===cat);
+    if(!inCat.length) return;
+    body+=`<div class="eyebrow" style="margin:20px 0 10px">${cat}</div><div class="grid g3">`+
+      inCat.map(it=>`<div class="card armory-item ${it.magical?'magical':''}">
+        <button class="del" data-del-arm="${it.id}" style="position:absolute;right:10px;top:10px">\u2715</button>
+        <h3 style="font-size:1.02rem;padding-right:26px">${it.magical?'\u2726 ':''}${esc(it.name)}${(+it.qty>1)?` <span class="qty">\u00d7${esc(it.qty)}</span>`:''}</h3>
+        ${it.where?`<div class="sub" style="margin-top:3px">${esc(it.where)}</div>`:''}
+        ${it.notes?`<p style="margin:8px 0 0;font-size:.86rem;color:var(--parchment)">${esc(it.notes)}</p>`:''}
+        <div class="row" style="margin-top:10px"><button class="btn sm" data-edit-arm="${it.id}">Edit</button></div>
+      </div>`).join('')+`</div>`;
+  });
+  if(!items.length) body=`<div class="empty">The armory's empty. Add the weapons, potions, keys, and curiosities the guild is stockpiling.</div>`;
+  return head('The Armory','Everything the Wardens are stockpiling for the guild \u2014 weapons, potions, keys, and curiosities. Grouped by type; magical pieces glow gold.',
+    `<button class="btn gold" data-add-arm>+ Add item</button>`)+
+    `<div class="row" style="gap:22px;margin-bottom:2px">
+       <div class="mono" style="font-size:.8rem;color:var(--verdigris)">${totalQty} items held</div>
+       <div class="mono" style="font-size:.8rem;color:var(--brass)">\u2726 ${magic} magical</div>
+     </div>${body}`;
 }
 
 /* ---- WIRING ---- */
@@ -733,6 +892,31 @@ function wire(){
   q('[data-add-sug]').forEach(b=>b.onclick=()=>suggestModal());
   q('[data-edit-sug]').forEach(b=>b.onclick=()=>suggestModal(b.dataset.editSug));
   q('[data-del-sug]').forEach(b=>b.onclick=()=>{state.suggestions=(state.suggestions||[]).filter(x=>x.id!==b.dataset.delSug);save();});
+  q('[data-add-arm]').forEach(b=>b.onclick=()=>armoryModal());
+  q('[data-edit-arm]').forEach(b=>b.onclick=()=>armoryModal(b.dataset.editArm));
+  q('[data-del-arm]').forEach(b=>b.onclick=()=>{state.armory=(state.armory||[]).filter(x=>x.id!==b.dataset.delArm);save();});
+  q('[data-add-mem]').forEach(b=>b.onclick=()=>guildModal());
+  q('[data-edit-mem]').forEach(b=>b.onclick=()=>guildModal(b.dataset.editMem));
+  q('[data-del-mem]').forEach(b=>b.onclick=()=>{state.guild=(state.guild||[]).filter(x=>x.id!==b.dataset.delMem);save();});
+  q('[data-add-tled]').forEach(b=>b.onclick=()=>tavernLedgerModal());
+  q('[data-del-tled]').forEach(b=>b.onclick=()=>{state.manor.ledger=(state.manor.ledger||[]).filter(x=>x.id!==b.dataset.delTled);save();});
+  const lt=document.getElementById('lootTotal');
+  if(lt){
+    const calc=()=>{
+      const total=+document.getElementById('lootTotal').value||0;
+      const shares=Math.max(1,+document.getElementById('lootShares').value||1);
+      const cutPct=Math.min(100,Math.max(0,+document.getElementById('lootCut').value||0));
+      const guildCut=Math.floor(total*cutPct/100), rest=total-guildCut, per=Math.floor(rest/shares), rem=rest-per*shares;
+      document.getElementById('lootResult').innerHTML=`Each of ${shares}: <b style="color:var(--verdigris)">${per.toLocaleString()} gp</b>${guildCut?` \u00b7 guild: <b style="color:var(--brass)">${guildCut.toLocaleString()} gp</b>`:''}${rem?` \u00b7 left over: ${rem} gp`:''}`;
+    };
+    ['lootTotal','lootShares','lootCut'].forEach(idn=>document.getElementById(idn).oninput=calc); calc();
+    document.getElementById('lootPost').onclick=()=>{
+      const total=+document.getElementById('lootTotal').value||0;
+      const cutPct=Math.min(100,Math.max(0,+document.getElementById('lootCut').value||0));
+      const guildCut=Math.floor(total*cutPct/100);
+      if(guildCut>0){ state.treasury.ledger.push({id:uid(),label:'Guild cut of a haul',amt:guildCut,type:'in'}); save(); }
+    };
+  }
 }
 function save(){queueSave();render();}
 
@@ -813,6 +997,34 @@ function suggestModal(id){
     <label class="fld"><span class="lbl">Status</span><select data-f="status">${opts}</select></label>
     <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">${id?'Save':'Add'}</button></div>`);
   modal.querySelector('#s').onclick=()=>{const d=collect();if(d.text){ if(!d.status)d.status='Idea'; if(id)Object.assign(s,d); else { state.suggestions=state.suggestions||[]; state.suggestions.push({id:uid(),...d}); } } closeModal();save();};
+}
+function armoryModal(id){
+  const it=id?(state.armory||[]).find(x=>x.id===id):{};
+  const cats=['Weapons','Armor','Potions','Scrolls','Magic Items','Keys','Treasure','Misc'];
+  const catOpts=cats.map(c=>`<option ${it.category===c?'selected':''}>${c}</option>`).join('');
+  const magOpts=`<option value="" ${!it.magical?'selected':''}>Mundane</option><option value="1" ${it.magical?'selected':''}>Magical</option>`;
+  openModal(`<h3>${id?'Edit item':'Add to the armory'}</h3>${fld('Item name','name',it.name)}
+    <div class="row"><div style="flex:2"><label class="fld"><span class="lbl">Category</span><select data-f="category">${catOpts}</select></label></div><div style="flex:1">${fld('Qty','qty',it.qty||1,'number')}</div></div>
+    <div class="row"><div style="flex:2">${fld('Where / who holds it','where',it.where)}</div><div style="flex:1"><label class="fld"><span class="lbl">Type</span><select data-f="magical">${magOpts}</select></label></div></div>
+    ${area('Notes','notes',it.notes)}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">${id?'Save':'Add item'}</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.name){ d.qty=+d.qty||1; d.magical=!!d.magical; if(id)Object.assign(it,d); else { state.armory=state.armory||[]; state.armory.push({id:uid(),...d}); } } closeModal();save();};
+}
+function guildModal(id){
+  const m=id?(state.guild||[]).find(x=>x.id===id):{};
+  const RANKS=['Founder','Warden','Officer','Member','Initiate','Staff','Ally','Recruit'];
+  const rankOpts=RANKS.map(r=>`<option ${m.rank===r?'selected':''}>${r}</option>`).join('');
+  openModal(`<h3>${id?'Edit member':'Add member'}</h3>${fld('Name','name',m.name)}${fld('Role','role',m.role)}
+    <label class="fld"><span class="lbl">Rank</span><select data-f="rank">${rankOpts}</select></label>
+    ${area('Notes','notes',m.notes)}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">${id?'Save':'Add'}</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.name){ if(!d.rank)d.rank='Member'; if(id)Object.assign(m,d); else { state.guild=state.guild||[]; state.guild.push({id:uid(),...d}); } } closeModal();save();};
+}
+function tavernLedgerModal(){
+  const led=state.manor.ledger=state.manor.ledger||[];
+  openModal(`<h3>Log a tenday</h3>${fld('Label','label','Tenday '+(led.length+1))}${fld('Profit (gp)','profit',0,'number')}${area('Notes (optional)','notes')}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">Add</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.label){ d.profit=+d.profit||0; led.push({id:uid(),...d}); } closeModal();save();};
 }
 </script>
 </body>
