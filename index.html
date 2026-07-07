@@ -429,16 +429,18 @@ function defaults(){ return {
     {id:uid(),text:'"Bodrin, brown belly balance beard, at your service."',by:'Bodrin'},
     {id:uid(),text:'"I got attacked by a life-sized shit. I sat down. It ate my ass. I jumped out the window."',by:'Valek, recapping the toilet ooze'}
   ],
+  suggestions:[ {id:uid(),text:'Example: a dice roller, a "next session" countdown, a search box… delete this and drop your own ideas.',by:'Claude',status:'Idea'} ],
   mapUrl:'https://www.aidedd.org/atlas/waterdeep'
 }; }
 
 const TABS=[
   ['charter','Charter'],['roster','Roster'],['chronicle','Chronicle'],['manor','The Manor'],['leads','Leads'],
   ['treasury','Treasury'],['factions','Factions'],['contracts','Contracts'],
-  ['contacts','Contacts'],['map','Map'],['talk','Table Talk']
+  ['contacts','Contacts'],['map','Map'],['talk','Table Talk'],['suggest','Suggestions']
 ];
 let state, active='charter';
 function uid(){return Math.random().toString(36).slice(2,9)}
+function withDefaults(s){ if(!s||typeof s!=='object') return defaults(); const d=defaults(); for(const k in d){ if(s[k]===undefined) s[k]=d[k]; } return s; }
 function esc(s){return (s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 
 /* ---- Image finder: tries the repo root and common folders so portraits/banner
@@ -478,7 +480,7 @@ function mountBanner(){
   try{ saved = await Promise.race([ readStore(), new Promise(r=>setTimeout(()=>r('__timeout'),4500)) ]); }
   catch(e){ saved=null; }
   if(saved && saved!=='__timeout'){
-    state=saved; lastSynced=JSON.stringify(state); renderStatus(); render();
+    state=withDefaults(saved); lastSynced=JSON.stringify(state); renderStatus(); render();
   } else {
     lastSynced=JSON.stringify(state);
     if(saved===null && mode==='firebase'){ try{ await dbRef.set(state); }catch(e){} } // seed an empty DB (never on timeout)
@@ -489,7 +491,7 @@ function mountBanner(){
       const incoming=JSON.stringify(snap.val());
       if(incoming===lastSynced) return;                                  // our own write echoing back
       if(document.getElementById('modalBg').classList.contains('on')) return; // don't interrupt someone editing
-      state=snap.val(); lastSynced=incoming; renderStatus(); render();
+      state=withDefaults(snap.val()); lastSynced=incoming; renderStatus(); render();
     });
   }
 })();
@@ -513,7 +515,7 @@ function renderStatus(){
 function render(){
   document.getElementById('main').innerHTML=`<div class="panel on">${({
     charter:renderCharter,roster:renderRoster,chronicle:renderChronicle,manor:renderManor,leads:renderLeads,treasury:renderTreasury,
-    factions:renderFactions,contracts:renderContracts,contacts:renderContacts,map:renderMap,talk:renderTalk
+    factions:renderFactions,contracts:renderContracts,contacts:renderContacts,map:renderMap,talk:renderTalk,suggest:renderSuggest
   })[active]()}</div>`;
   wire();
   document.querySelectorAll('.avatar[data-portrait]').forEach(el=>{
@@ -683,6 +685,20 @@ function renderManor(){
     </div>`;
 }
 
+function renderSuggest(){
+  const order={Idea:0,Building:1,Done:2};
+  const items=[...(state.suggestions||[])].sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)).map(s=>{
+    const cls=s.status==='Done'?'ally':s.status==='Building'?'neutral':'';
+    return `<div class="card"><button class="del" data-del-sug="${s.id}" style="position:absolute;right:12px;top:12px">\u2715</button>
+      <span class="tag ${cls}">${esc(s.status||'Idea')}</span>
+      <p style="margin:12px 0 0;font-size:.98rem;color:var(--foam)">${esc(s.text)}</p>
+      ${s.by?`<div class="sub" style="margin-top:8px">\u2014 ${esc(s.by)}</div>`:''}
+      <div class="row" style="margin-top:12px"><button class="btn sm" data-edit-sug="${s.id}">Edit</button></div></div>`;
+  }).join('') || `<div class="empty">No suggestions yet. Drop ideas here \u2014 features, fixes, wild stuff \u2014 and Tyler will build them.</div>`;
+  return head('Suggestions','A scratchpad for the crew: what should this site do next? Add ideas, mark what\u2019s building, and they\u2019ll get picked up. (Temporary \u2014 we\u2019ll retire this once the wishlist is done.)',
+    `<button class="btn gold" data-add-sug>+ Add idea</button>`)+`<div class="grid g2">${items}</div>`;
+}
+
 /* ---- WIRING ---- */
 function wire(){
   const q=s=>document.querySelectorAll(s);
@@ -715,6 +731,9 @@ function wire(){
   q('[data-add-mren]').forEach(b=>b.onclick=()=>{const n=prompt('Renovation / task:');if(n){state.manor.renovations.push({id:uid(),name:n,done:false});save();}});
   q('[data-add-quote]').forEach(b=>b.onclick=()=>quoteModal());
   q('[data-del-quote]').forEach(b=>b.onclick=()=>{state.quotes=state.quotes.filter(x=>x.id!==b.dataset.delQuote);save();});
+  q('[data-add-sug]').forEach(b=>b.onclick=()=>suggestModal());
+  q('[data-edit-sug]').forEach(b=>b.onclick=()=>suggestModal(b.dataset.editSug));
+  q('[data-del-sug]').forEach(b=>b.onclick=()=>{state.suggestions=(state.suggestions||[]).filter(x=>x.id!==b.dataset.delSug);save();});
 }
 function save(){queueSave();render();}
 
@@ -787,6 +806,14 @@ function quoteModal(){
   openModal(`<h3>Add a quote</h3>${area('The cursed thing that was said','text')}${fld('Who said it','by')}
     <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">Enshrine it</button></div>`);
   modal.querySelector('#s').onclick=()=>{const d=collect();if(d.text)state.quotes.unshift({id:uid(),...d});closeModal();save();};
+}
+function suggestModal(id){
+  const s=id?(state.suggestions||[]).find(x=>x.id===id):{};
+  const opts=['Idea','Building','Done'].map(v=>`<option ${s.status===v?'selected':''}>${v}</option>`).join('');
+  openModal(`<h3>${id?'Edit idea':'Add idea'}</h3>${area('The idea','text',s.text)}${fld('Your name (optional)','by',s.by)}
+    <label class="fld"><span class="lbl">Status</span><select data-f="status">${opts}</select></label>
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">${id?'Save':'Add'}</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.text){ if(!d.status)d.status='Idea'; if(id)Object.assign(s,d); else { state.suggestions=state.suggestions||[]; state.suggestions.push({id:uid(),...d}); } } closeModal();save();};
 }
 </script>
 </body>
