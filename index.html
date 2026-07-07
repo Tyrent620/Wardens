@@ -99,9 +99,29 @@
   .tag.enemy{color:var(--blood);border-color:rgba(184,72,47,.5)}
   .tag.neutral{color:var(--brass);border-color:rgba(198,154,76,.5)}
   .empty{border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted);font-style:italic}
-  .armory-item .qty{font-family:var(--mono);font-size:.68rem;color:var(--brass);border:1px solid var(--line);border-radius:20px;padding:1px 7px;vertical-align:middle;white-space:nowrap}
-  .armory-item.magical{border-color:rgba(198,154,76,.55);box-shadow:0 0 22px -10px rgba(198,154,76,.5),var(--shadow)}
-  .armory-item.magical h3{color:var(--brass)}
+  .armory-room{background:
+      radial-gradient(720px 340px at 50% -8%, rgba(198,154,76,.17), transparent 62%),
+      radial-gradient(520px 260px at 10% 6%, rgba(79,179,160,.06), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.24) 0 1px, transparent 1px 46px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.24) 0 1px, transparent 1px 66px),
+      linear-gradient(180deg,#171e2a,#0f141c);
+    border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:inset 0 0 90px rgba(0,0,0,.6),var(--shadow)}
+  .fixture{display:flex;gap:16px;align-items:flex-start;background:linear-gradient(165deg,rgba(13,36,56,.66),rgba(7,26,43,.72));border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+  .fixture:last-child{margin-bottom:0}
+  .fixture-art{flex:none;width:92px}
+  .fixture-art svg{width:92px;height:auto;display:block;filter:drop-shadow(0 5px 9px rgba(0,0,0,.55))}
+  .fixture-body{flex:1;min-width:0}
+  .fixture-count{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--brass)}
+  .fixture-name{font-family:var(--disp);color:var(--foam);font-size:1.18rem;letter-spacing:.03em}
+  .fixture-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px}
+  .arm-slot{background:rgba(3,12,20,.5);border:1px solid var(--line-soft);border-radius:10px;padding:10px 12px;position:relative}
+  .arm-slot.magical{border-color:rgba(198,154,76,.5);box-shadow:0 0 18px -7px rgba(198,154,76,.6)}
+  .arm-slot .nm{font-family:var(--disp);color:var(--foam);font-size:.96rem;padding-right:22px;line-height:1.25}
+  .arm-slot.magical .nm{color:var(--brass)}
+  .arm-slot .meta{font-family:var(--mono);font-size:.62rem;color:var(--verdigris);margin-top:2px}
+  .arm-slot .nt{font-size:.82rem;color:var(--muted);margin-top:5px;line-height:1.35}
+  .arm-slot .qtyb{font-family:var(--mono);font-size:.6rem;color:var(--brass);border:1px solid var(--line);border-radius:20px;padding:0 6px;white-space:nowrap}
+  @media(max-width:560px){ .fixture{flex-direction:column} .fixture-art,.fixture-art svg{width:72px} }
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .spread{justify-content:space-between}
   .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1}
@@ -227,7 +247,7 @@
   <div id="searchResults"></div>
 </div>
 <main class="wrap" id="main"></main>
-<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 8</span></footer>
+<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 9</span></footer>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="save-flash" id="saveFlash">✓ Saved to the guild ledger</div>
@@ -830,31 +850,55 @@ function renderSuggest(){
     `<button class="btn gold" data-add-sug>+ Add idea</button>`)+`<div class="grid g2">${items}</div>`;
 }
 
+function fixtureLabel(cat){
+  return ({Weapons:'The Weapon Rack',Armor:'The Armor Chest',Potions:'The Potion Shelf',Scrolls:'The Scroll Cubby','Magic Items':'The Reliquary',Keys:'The Key Ring',Treasure:'The Treasure Chest',Misc:'The Supply Crate'})[cat]||cat;
+}
+function fixtureArt(cat){
+  const A={
+    'Weapons':`<svg viewBox="0 0 100 92"><rect x="6" y="22" width="88" height="8" rx="2" fill="#6b4a2a" stroke="#8a6d33" stroke-width="1.5"/><rect x="6" y="74" width="88" height="8" rx="2" fill="#6b4a2a" stroke="#8a6d33" stroke-width="1.5"/><path d="M26 20 V78" stroke="#cdd6dd" stroke-width="3.5" stroke-linecap="round"/><path d="M20 66 h12" stroke="#c69a4c" stroke-width="3.5"/><path d="M50 20 V78" stroke="#8a6d33" stroke-width="3.5"/><path d="M50 13 l6 14 h-12 Z" fill="#cdd6dd" stroke="#9aa7b0"/><path d="M74 20 V78" stroke="#8a6d33" stroke-width="3.5"/><path d="M74 24 q16 3 15 17 q-9 0 -15 -6 Z" fill="#cdd6dd" stroke="#9aa7b0"/></svg>`,
+    'Armor':`<svg viewBox="0 0 100 92"><rect x="16" y="44" width="68" height="34" rx="4" fill="#5f4527" stroke="#8a6d33" stroke-width="2"/><path d="M16 44 q0 -20 34 -20 q34 0 34 20 Z" fill="#6f5030" stroke="#8a6d33" stroke-width="2"/><rect x="46" y="52" width="8" height="9" rx="1" fill="#c69a4c"/><path d="M50 28 l11 4 v9 q0 10 -11 14 q-11 -4 -11 -14 v-9 Z" fill="#123350" stroke="#9aa7b0" stroke-width="1.5"/><path d="M50 33 v20" stroke="#cdd6dd" stroke-width="1.2"/></svg>`,
+    'Potions':`<svg viewBox="0 0 100 92"><rect x="8" y="66" width="84" height="7" rx="2" fill="#6b4a2a" stroke="#8a6d33" stroke-width="1.5"/><path d="M24 42 h10 l4 9 v10 a7 7 0 0 1 -22 0 v-10 l4 -9 Z" fill="#4fb3a0" opacity=".85" stroke="#2f7d6e"/><rect x="26" y="36" width="6" height="7" rx="1" fill="#8a6d33"/><circle cx="54" cy="56" r="12" fill="#a8412f" opacity=".85" stroke="#6e2415"/><rect x="51" y="40" width="6" height="9" fill="#8a6d33"/><path d="M74 44 h9 v18 a6.5 6.5 0 0 1 -9 0 Z" fill="#c69a4c" opacity=".85" stroke="#8a6d33"/><rect x="75" y="37" width="6" height="8" rx="1" fill="#8a6d33"/></svg>`,
+    'Scrolls':`<svg viewBox="0 0 100 92"><rect x="14" y="24" width="72" height="54" rx="4" fill="none" stroke="#8a6d33" stroke-width="2.5"/><line x1="50" y1="24" x2="50" y2="78" stroke="#8a6d33" stroke-width="2"/><line x1="14" y1="51" x2="86" y2="51" stroke="#8a6d33" stroke-width="2"/><circle cx="32" cy="37" r="7" fill="#e5dabf" stroke="#c69a4c" stroke-width="1.5"/><circle cx="68" cy="37" r="7" fill="#e5dabf" stroke="#c69a4c" stroke-width="1.5"/><circle cx="32" cy="64" r="7" fill="#e5dabf" stroke="#c69a4c" stroke-width="1.5"/><rect x="60" y="59" width="16" height="10" rx="2" fill="#e5dabf" stroke="#c69a4c" stroke-width="1.2"/></svg>`,
+    'Magic Items':`<svg viewBox="0 0 100 92"><path d="M36 70 h28 l4 8 h-36 Z" fill="#5f4527" stroke="#8a6d33" stroke-width="1.5"/><rect x="42" y="58" width="16" height="14" fill="#6f5030" stroke="#8a6d33" stroke-width="1.5"/><circle cx="50" cy="40" r="21" fill="#c69a4c" opacity=".13"/><path d="M50 24 l11 12 -11 18 -11 -18 Z" fill="#4fb3a0" stroke="#c69a4c" stroke-width="1.5"/><path d="M39 36 h22" stroke="#c69a4c" stroke-width="1"/><path d="M74 22 l1.6 4.4 4.4 1.6 -4.4 1.6 -1.6 4.4 -1.6 -4.4 -4.4 -1.6 4.4 -1.6 Z" fill="#c69a4c"/><path d="M26 32 l1.1 3 3 1.1 -3 1.1 -1.1 3 -1.1 -3 -3 -1.1 3 -1.1 Z" fill="#4fb3a0"/></svg>`,
+    'Keys':`<svg viewBox="0 0 100 92"><circle cx="38" cy="46" r="16" fill="none" stroke="#c69a4c" stroke-width="4"/><g stroke="#c69a4c" stroke-width="3" fill="none" stroke-linecap="round"><path d="M52 39 h24"/><path d="M72 39 v7 M76 39 v5"/></g><circle cx="52" cy="39" r="4" fill="none" stroke="#c69a4c" stroke-width="3"/><g stroke="#8a6d33" stroke-width="3" fill="none" stroke-linecap="round"><path d="M52 55 h20"/><path d="M68 55 v6 M72 55 v4"/></g><circle cx="52" cy="55" r="4" fill="none" stroke="#8a6d33" stroke-width="3"/></svg>`,
+    'Treasure':`<svg viewBox="0 0 100 92"><circle cx="40" cy="40" r="5" fill="#e2bd6e" stroke="#8a6d33"/><circle cx="52" cy="37" r="5" fill="#e2bd6e" stroke="#8a6d33"/><circle cx="62" cy="41" r="5" fill="#e2bd6e" stroke="#8a6d33"/><rect x="16" y="46" width="68" height="32" rx="4" fill="#6b4a2a" stroke="#8a6d33" stroke-width="2"/><path d="M16 46 q0 -16 34 -16 q34 0 34 16 Z" fill="#7a5730" stroke="#8a6d33" stroke-width="2"/><rect x="28" y="30" width="6" height="48" fill="#c69a4c" opacity=".7"/><rect x="66" y="30" width="6" height="48" fill="#c69a4c" opacity=".7"/><rect x="46" y="52" width="8" height="9" rx="1" fill="#c69a4c"/></svg>`,
+    'Misc':`<svg viewBox="0 0 100 92"><rect x="22" y="26" width="56" height="56" rx="3" fill="#6b4a2a" stroke="#8a6d33" stroke-width="2.5"/><path d="M22 26 L78 82 M78 26 L22 82" stroke="#8a6d33" stroke-width="2.5"/><rect x="22" y="26" width="56" height="10" fill="#7a5730" stroke="#8a6d33" stroke-width="1.5"/></svg>`
+  };
+  return A[cat]||A['Misc'];
+}
 function renderArmory(){
   const CATS=['Weapons','Armor','Potions','Scrolls','Magic Items','Keys','Treasure','Misc'];
   const items=state.armory||[];
   const totalQty=items.reduce((a,b)=>a+(+b.qty||1),0);
   const magic=items.filter(i=>i.magical).length;
-  let body='';
+  let fixtures='';
   CATS.forEach(cat=>{
     const inCat=items.filter(i=>(i.category||'Misc')===cat);
     if(!inCat.length) return;
-    body+=`<div class="eyebrow" style="margin:20px 0 10px">${cat}</div><div class="grid g3">`+
-      inCat.map(it=>`<div class="card armory-item ${it.magical?'magical':''}">
-        <button class="del" data-del-arm="${it.id}" style="position:absolute;right:10px;top:10px">\u2715</button>
-        <h3 style="font-size:1.02rem;padding-right:26px">${it.magical?'\u2726 ':''}${esc(it.name)}${(+it.qty>1)?` <span class="qty">\u00d7${esc(it.qty)}</span>`:''}</h3>
-        ${it.where?`<div class="sub" style="margin-top:3px">${esc(it.where)}</div>`:''}
-        ${it.notes?`<p style="margin:8px 0 0;font-size:.86rem;color:var(--parchment)">${esc(it.notes)}</p>`:''}
-        <div class="row" style="margin-top:10px"><button class="btn sm" data-edit-arm="${it.id}">Edit</button></div>
-      </div>`).join('')+`</div>`;
+    const slots=inCat.map(it=>`<div class="arm-slot ${it.magical?'magical':''}">
+        <button class="del" style="position:absolute;right:22px;top:6px" data-edit-arm="${it.id}" title="Edit">\u270e</button>
+        <button class="del" style="position:absolute;right:5px;top:6px" data-del-arm="${it.id}" title="Remove">\u2715</button>
+        <div class="nm">${it.magical?'\u2726 ':''}${esc(it.name)}${(+it.qty>1)?` <span class="qtyb">\u00d7${esc(it.qty)}</span>`:''}</div>
+        ${it.where?`<div class="meta">${esc(it.where)}</div>`:''}
+        ${it.notes?`<div class="nt">${esc(it.notes)}</div>`:''}
+      </div>`).join('');
+    fixtures+=`<div class="fixture">
+        <div class="fixture-art">${fixtureArt(cat)}</div>
+        <div class="fixture-body">
+          <div class="fixture-count">${esc(cat)} \u00b7 ${inCat.length}</div>
+          <div class="fixture-name">${esc(fixtureLabel(cat))}</div>
+          <div class="fixture-items">${slots}</div>
+        </div>
+      </div>`;
   });
-  if(!items.length) body=`<div class="empty">The armory's empty. Add the weapons, potions, keys, and curiosities the guild is stockpiling.</div>`;
-  return head('The Armory','Everything the Wardens are stockpiling for the guild \u2014 weapons, potions, keys, and curiosities. Grouped by type; magical pieces glow gold.',
+  if(!items.length) fixtures=`<div class="empty">The armory's empty. Add the weapons, potions, keys, and curiosities the guild is stockpiling.</div>`;
+  return head('The Armory','The guild stores. Weapons on the rack, armor and treasure in their chests, potions on the shelf, relics on the reliquary \u2014 magical pieces glow gold.',
     `<button class="btn gold" data-add-arm>+ Add item</button>`)+
-    `<div class="row" style="gap:22px;margin-bottom:2px">
+    `<div class="row" style="gap:22px;margin-bottom:12px">
        <div class="mono" style="font-size:.8rem;color:var(--verdigris)">${totalQty} items held</div>
        <div class="mono" style="font-size:.8rem;color:var(--brass)">\u2726 ${magic} magical</div>
-     </div>${body}`;
+     </div>
+     <div class="armory-room">${fixtures}</div>`;
 }
 
 /* ---- WIRING ---- */
