@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wardens of the Deep — Campaign Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --abyss:#071a2b; --deep:#0d2438; --tide:#123350; --tide-2:#164064;
+    --brass:#c69a4c; --brass-dim:#8a6d33; --verdigris:#4fb3a0;
+    --parchment:#e5dabf; --foam:#f4efe2; --muted:#8ba7b8; --blood:#b8482f;
+    --line:rgba(198,154,76,.22); --line-soft:rgba(139,167,184,.16);
+    --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+    --disp:'Cinzel',Georgia,serif; --body:'EB Garamond','Iowan Old Style',Palatino,serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:
+      radial-gradient(1200px 600px at 78% -8%, rgba(79,179,160,.10), transparent 60%),
+      radial-gradient(900px 500px at 8% 0%, rgba(198,154,76,.08), transparent 55%),
+      linear-gradient(180deg,#061625,#071a2b 40%,#05131f);
+    color:var(--parchment); font-family:var(--body); font-size:17px; line-height:1.55;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--verdigris);text-decoration:none} a:hover{color:var(--brass)}
+  h1,h2,h3{font-family:var(--disp);font-weight:600;color:var(--foam);letter-spacing:.02em;margin:0}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.34em;text-transform:uppercase;color:var(--brass)}
+
+  header.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .wotd-banner{height:clamp(150px,24vw,300px);background-size:cover;background-position:center 28%;position:relative;border-bottom:1px solid var(--line)}
+  .wotd-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,20,33,.15),rgba(6,20,33,.55) 66%,#061625)}
+  .hero-inner{display:flex;gap:34px;align-items:center;padding:40px 0 30px;flex-wrap:wrap}
+  .crest{width:150px;height:150px;flex:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+  .hero-copy{flex:1;min-width:280px}
+  .hero-copy h1{font-size:clamp(2.1rem,5vw,3.4rem);line-height:1.02;font-weight:700}
+  .hero-copy h1 .of{color:var(--brass);display:block;font-size:.42em;letter-spacing:.5em;font-weight:500;margin:2px 0 -2px 3px}
+  .motto{font-style:italic;color:var(--muted);font-size:1.15rem;margin-top:10px;max-width:54ch}
+  .wave-line{height:2px;width:100%;margin-top:14px;background:repeating-linear-gradient(90deg,var(--brass) 0 22px,transparent 22px 30px);opacity:.5}
+
+  .status{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:6px 0 30px}
+  .status .cell{background:linear-gradient(180deg,var(--deep),var(--abyss));padding:13px 16px}
+  .status .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .status .v{font-family:var(--disp);color:var(--foam);font-size:1.06rem;margin-top:3px}
+
+  nav.tabs{position:sticky;top:0;z-index:30;background:rgba(6,20,33,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .tabrow{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+  .tabrow::-webkit-scrollbar{display:none}
+  .tab{flex:none;background:none;border:none;color:var(--muted);font-family:var(--disp);font-size:.86rem;letter-spacing:.06em;padding:15px 16px;cursor:pointer;position:relative;white-space:nowrap;transition:color .18s}
+  .tab:hover{color:var(--parchment)}
+  .tab.active{color:var(--foam)}
+  .tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:linear-gradient(90deg,var(--brass),var(--verdigris))}
+
+  main{padding:34px 0 90px;min-height:60vh}
+  .panel{display:none;animation:rise .4s ease}
+  .panel.on{display:block}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .sec-head h2{font-size:1.7rem}
+  .sec-head p{margin:4px 0 0;color:var(--muted);font-size:.95rem;max-width:62ch}
+
+  .btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;background:linear-gradient(180deg,var(--tide-2),var(--tide));color:var(--foam);border:1px solid var(--line);border-radius:8px;padding:9px 15px;cursor:pointer;transition:.16s}
+  .btn:hover{border-color:var(--brass);color:var(--brass)}
+  .btn.gold{background:linear-gradient(180deg,var(--brass),var(--brass-dim));color:#20160a;border-color:var(--brass)}
+  .btn.gold:hover{color:#000;filter:brightness(1.08)}
+  .btn.ghost{background:none}
+  .btn.sm{padding:5px 10px;font-size:.62rem}
+  input,textarea,select{font-family:var(--body);font-size:.98rem;color:var(--foam);background:rgba(3,12,20,.6);border:1px solid var(--line-soft);border-radius:8px;padding:9px 11px;width:100%}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--verdigris)}
+  textarea{resize:vertical;min-height:70px;line-height:1.5}
+  label.fld{display:block;margin-bottom:12px}
+  label.fld .lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
+
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+  .card{background:linear-gradient(165deg,var(--deep),var(--abyss));border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);position:relative}
+  .card h3{font-size:1.12rem}
+  .card .sub{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--verdigris);text-transform:uppercase}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--muted)}
+  .tag.ally{color:var(--verdigris);border-color:rgba(79,179,160,.5)}
+  .tag.enemy{color:var(--blood);border-color:rgba(184,72,47,.5)}
+  .tag.neutral{color:var(--brass);border-color:rgba(198,154,76,.5)}
+  .empty{border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted);font-style:italic}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .spread{justify-content:space-between}
+  .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1}
+  .del:hover{color:var(--blood)}
+
+  .hero-card .avatar{width:52px;height:52px;border-radius:10px;flex:none;display:grid;place-items:center;font-family:var(--disp);font-size:1.3rem;color:#0a1a26;background:linear-gradient(135deg,var(--brass),var(--verdigris));background-size:cover;background-position:center}
+  .barwrap{height:6px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px}
+  .bar{height:100%;background:linear-gradient(90deg,var(--brass),var(--verdigris))}
+
+  /* CHARTER */
+  .charter{max-width:760px;margin:0 auto;text-align:center;padding:34px 30px}
+  .charter .creed{font-family:var(--body);font-style:italic;font-size:1.22rem;line-height:1.7;color:var(--foam);margin:14px auto 6px;max-width:56ch}
+  .charter .sigs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 34px;margin-top:14px}
+  .charter .sig{font-family:var(--disp);font-size:1.25rem;color:var(--brass);border-bottom:1px solid var(--line);padding-bottom:2px}
+  .charter .rule{height:1px;background:var(--line);margin:22px auto;max-width:200px}
+
+  .log-entry{border-left:2px solid var(--brass-dim);padding:2px 0 18px 20px;position:relative;margin-left:6px}
+  .log-entry::before{content:"";position:absolute;left:-6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--brass);box-shadow:0 0 0 3px var(--abyss)}
+  .log-entry .date{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;color:var(--verdigris);text-transform:uppercase}
+  .log-entry h3{font-size:1.15rem;margin:3px 0 6px}
+  .log-entry p{margin:0;color:var(--parchment);white-space:pre-wrap}
+
+  /* LEADS BOARD */
+  .board{background:radial-gradient(circle at 30% 20%, rgba(0,0,0,.25), transparent 60%),linear-gradient(160deg,#3a2c1c,#2a2013);border:6px solid #1c140a;border-radius:10px;padding:22px;position:relative;box-shadow:inset 0 0 60px rgba(0,0,0,.5),var(--shadow)}
+  .poi{background:#f2ead3;color:#241a10;border-radius:4px;padding:14px 14px 12px;position:relative;box-shadow:0 10px 18px -8px rgba(0,0,0,.7);transform:rotate(var(--r,-1deg));transition:.18s}
+  .poi:hover{transform:rotate(0) translateY(-3px)}
+  .poi::before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e05a3a,#7d2414);box-shadow:0 2px 3px rgba(0,0,0,.5)}
+  .poi .who{font-family:var(--disp);font-weight:700;font-size:1.02rem;line-height:1.1}
+  .poi .desc{font-size:.84rem;margin-top:8px;line-height:1.35}
+  .clue{background:#fbf6d8;color:#3a2d12;font-size:.85rem;padding:9px 12px;border-radius:3px;transform:rotate(var(--r,1deg));box-shadow:0 6px 12px -6px rgba(0,0,0,.6);position:relative;font-style:italic}
+
+  .fac{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line-soft)}
+  .fac .nm{flex:1;min-width:120px}
+  .fac .nm b{font-family:var(--disp);font-weight:600;color:var(--foam);display:block;font-size:1rem}
+  .fac .nm small{display:block;color:var(--muted);font-size:.78rem;line-height:1.4;margin-top:2px}
+  .fac .nm small.stand{color:var(--verdigris);font-style:italic;margin-top:4px}
+  .pips{display:flex;gap:4px}
+  .pip{width:15px;height:15px;border-radius:3px;border:1px solid var(--line);cursor:pointer;background:rgba(0,0,0,.3);transition:.12s}
+  .pip.fill{background:linear-gradient(135deg,var(--brass),var(--verdigris));border-color:transparent}
+  .pip.neg{background:linear-gradient(135deg,var(--blood),#6e2415);border-color:transparent}
+
+  .coffer{background:linear-gradient(160deg,#2a2008,#14100a);border:1px solid var(--brass);border-radius:14px;padding:22px;text-align:center}
+  .coffer .amt{font-family:var(--mono);font-size:clamp(1.8rem,6vw,2.8rem);color:var(--brass);font-weight:600}
+  .coffer .lbl{font-family:var(--disp);letter-spacing:.2em;text-transform:uppercase;color:var(--parchment);font-size:.8rem}
+  .ledger .line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);font-family:var(--mono);font-size:.9rem}
+  .ledger .line .amt{color:var(--verdigris)}
+  .ledger .line.neg .amt{color:var(--blood)}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(3,10,16,.72);backdrop-filter:blur(3px);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+  .modal-bg.on{display:flex}
+  .modal{background:linear-gradient(165deg,var(--deep),var(--abyss));border:1px solid var(--brass);border-radius:16px;padding:24px;width:100%;max-width:480px;box-shadow:var(--shadow)}
+  .modal h3{font-size:1.25rem;margin-bottom:16px}
+
+  .gate{position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:24px;text-align:center;
+    background:radial-gradient(900px 500px at 50% 28%, rgba(79,179,160,.12), transparent 60%),linear-gradient(180deg,#061625,#05131f)}
+  .gate.on{display:grid}
+  .gate .box{max-width:380px;width:100%}
+  .gate .crest-sm{width:92px;height:92px;margin:0 auto 18px;display:block;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+  .gate h2{font-size:1.5rem;margin-bottom:6px}
+  .gate p{color:var(--muted);font-style:italic;margin:0 0 18px}
+  .gate input{text-align:center;letter-spacing:.1em}
+  .gate .err{color:var(--blood);font-size:.85rem;min-height:1.3em;margin-top:12px;font-style:italic}
+
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);font-size:.82rem;text-align:center}
+  .save-flash{position:fixed;bottom:18px;right:18px;background:var(--tide);border:1px solid var(--verdigris);color:var(--foam);font-family:var(--mono);font-size:.7rem;padding:8px 14px;border-radius:8px;opacity:0;transform:translateY(8px);transition:.25s;z-index:70;pointer-events:none}
+  .save-flash.show{opacity:1;transform:none}
+  @media(max-width:560px){ body{font-size:16px} .hero-inner{gap:22px} .crest{width:110px;height:110px} }
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate"><div class="box">
+  <svg class="crest-sm" viewBox="0 0 200 200" aria-hidden="true">
+    <circle cx="100" cy="100" r="94" fill="#0d2438" stroke="#c69a4c" stroke-width="3"/>
+    <g stroke="#c69a4c" stroke-width="4" fill="none" stroke-linecap="round">
+      <path d="M100 50 V148"/><path d="M80 64 V50 M100 60 V46 M120 64 V50"/><path d="M78 66 Q100 86 122 66"/>
+    </g>
+    <g stroke="#4fb3a0" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".85">
+      <path d="M46 122 q12 -12 24 0 t24 0 t24 0 t22 0"/><path d="M50 136 q12 -12 24 0 t24 0 t24 0 t18 0" opacity=".6"/>
+    </g>
+  </svg>
+  <div class="eyebrow">Wardens of the Deep</div>
+  <h2>Speak the word</h2>
+  <p>This hall is for the crew. Give the Wardens' word to enter.</p>
+  <input id="gateInput" type="password" placeholder="The word&#8230;" autocomplete="off">
+  <div style="margin-top:12px"><button class="btn gold" id="gateBtn" style="width:100%">Enter</button></div>
+  <div class="err" id="gateErr"></div>
+</div></div>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <svg class="crest" viewBox="0 0 200 200" aria-label="Wardens of the Deep crest">
+      <defs>
+        <linearGradient id="gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#123350"/><stop offset="1" stop-color="#05121e"/></linearGradient>
+        <linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2bd6e"/><stop offset="1" stop-color="#8a6d33"/></linearGradient>
+      </defs>
+      <circle cx="100" cy="100" r="94" fill="url(#gd)" stroke="url(#gb)" stroke-width="3"/>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#4fb3a0" stroke-width="1" opacity=".5"/>
+      <g stroke="url(#gb)" stroke-width="4" fill="none" stroke-linecap="round">
+        <path d="M100 44 V150"/><path d="M78 60 V44 M100 56 V40 M122 60 V44"/>
+        <path d="M74 62 Q100 84 126 62"/><path d="M78 44 Q78 36 86 36 M122 44 Q122 36 114 36"/>
+      </g>
+      <circle cx="100" cy="150" r="6" fill="url(#gb)"/>
+      <g stroke="#4fb3a0" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".85">
+        <path d="M40 120 q12 -12 24 0 t24 0 t24 0 t24 0 t20 0"/>
+        <path d="M40 134 q12 -12 24 0 t24 0 t24 0 t24 0 t20 0" opacity=".7"/>
+        <path d="M46 148 q12 -12 24 0 t24 0 t24 0 t22 0" opacity=".5"/>
+      </g>
+    </svg>
+    <div class="hero-copy">
+      <div class="eyebrow">The City of Splendors · Waterdeep</div>
+      <h1>Wardens<span class="of">of the deep</span></h1>
+      <p class="motto">"Too many companies falter when trial comes. We are built not to."</p>
+      <div class="wave-line"></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="status" id="statusStrip"></div></div>
+</header>
+
+<nav class="tabs"><div class="wrap tabrow" id="tabrow"></div></nav>
+<main class="wrap" id="main"></main>
+<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span></footer>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div class="save-flash" id="saveFlash">✓ Saved to the guild ledger</div>
+
+<script>
+/* ============================================================
+   STORAGE — built for GitHub Pages.
+   1) Paste a Firebase config below  -> all four of you sync live.
+   2) No config                      -> saves to each person's own browser.
+   3) Claude preview                 -> holds in memory (won't persist here).
+============================================================ */
+const KEY='wotd_state_v4';
+
+/* ---- Your crew's Firebase Realtime Database config (synced across all players). ---- */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDprgzyGsfDycas7D4Rz6lcem0eb_Ey5MU",
+  authDomain: "wardens-of-the-deep.firebaseapp.com",
+  databaseURL: "https://wardens-of-the-deep-default-rtdb.firebaseio.com",
+  projectId: "wardens-of-the-deep",
+  storageBucket: "wardens-of-the-deep.firebasestorage.app",
+  messagingSenderId: "694302637410",
+  appId: "1:694302637410:web:828f5fb1bddaf11306803b"
+};
+
+/* ---- Shared passphrase to enter the hub. Leave "" to remove the lock. ---- */
+const GATE_WORD = "justice felt";
+
+let mode='memory', db=null, dbRef=null, lastSynced='', mem=null, saveTimer=null;
+function localOK(){ try{ localStorage.setItem('__wotd','1'); localStorage.removeItem('__wotd'); return true; }catch(e){ return false; } }
+
+function initStore(){
+  if(FIREBASE_CONFIG && FIREBASE_CONFIG.databaseURL && window.firebase){
+    try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); dbRef=db.ref('wardens/state_v4'); mode='firebase'; return; }
+    catch(e){ console.warn('Firebase init failed — falling back to local.', e); }
+  }
+  mode = localOK() ? 'local' : 'memory';
+}
+async function readStore(){
+  if(mode==='firebase'){ try{ const s=await dbRef.once('value'); return s.exists()?s.val():null; }catch(e){ return null; } }
+  if(mode==='local'){ try{ const r=localStorage.getItem(KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+  return mem;
+}
+function queueSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    const json=JSON.stringify(state); lastSynced=json;
+    if(mode==='firebase' && dbRef){ try{ await dbRef.set(state); }catch(e){ console.warn(e); } }
+    else if(mode==='local'){ try{ localStorage.setItem(KEY,json); }catch(e){} }
+    else { mem=JSON.parse(json); }
+    flashSave();
+  },400);
+}
+function flashSave(){const f=document.getElementById('saveFlash');f.classList.add('show');setTimeout(()=>f.classList.remove('show'),1400);}
+function setFooter(){ const f=document.getElementById('storeNote'); if(!f) return;
+  f.textContent = mode==='firebase' ? 'Synced live to your crew.' : mode==='local' ? 'Saved on this device.' : 'Preview \u2014 changes won\u2019t persist here.'; }
+function gateInit(){
+  const g=document.getElementById('gate');
+  if(!GATE_WORD){ return; }                                  // no passphrase set = open hall
+  let passed=false; try{ passed=localStorage.getItem('wotd_gate')===GATE_WORD; }catch(e){}
+  if(passed) return;
+  g.classList.add('on');
+  const inp=document.getElementById('gateInput'), err=document.getElementById('gateErr');
+  const tryEnter=()=>{
+    if(inp.value.trim().toLowerCase()===GATE_WORD.trim().toLowerCase()){
+      try{ localStorage.setItem('wotd_gate',GATE_WORD); }catch(e){}
+      g.classList.remove('on');
+    } else { err.textContent="That's not the word. Ask a fellow Warden."; inp.value=''; inp.focus(); }
+  };
+  document.getElementById('gateBtn').onclick=tryEnter;
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') tryEnter(); });
+  setTimeout(()=>inp.focus(),60);
+}
+
+/* ---- DEFAULT STATE — party + primer only, no module spoilers ---- */
+function defaults(){ return {
+  campaign:{ inGameDate:'1492 DR · Winter in Waterdeep', focus:'Hunt the Dock Ward killer', nextSession:'Set your date' },
+  charter:{ creed:"We are the Wardens of the Deep. We give each their due and no more — mercy with weight, justice felt as well as known. We keep faith in our dealings, guard our own as a pack guards its blood, and set in order what falls to our charge. What is buried deep, we bring to light. What we build here will not break when it is tested." },
+  heroes:[
+    {id:uid(),name:'Valek',player:'',ancestry:'Earth Genasi',cls:'Paladin — Oath of Thunder',ties:'The Harpers',lvl:4,hp:32,hpMax:32,portrait:'Valek.png',
+     hook:"Found on the road with no memory, a great blade at his side and the broken sign of Helm near at hand. He serves Helm through action, not prayer, and means to forge a guild that will not break.",
+     secret:"What came before that hour on the road, he does not speak of — perhaps cannot."},
+    {id:uid(),name:'Nyx',player:'',ancestry:'Human',cls:'Rogue / tinkerer',ties:"Bregan D'aerthe (past)",lvl:4,hp:27,hpMax:27,portrait:'Nyx.png',
+     hook:"A Southern Ward orphan who learned to steal before he could read. A thief's hands, a tinkerer's mind, and a knack for telekinetic tricks — loyal to his chosen family above all.",
+     secret:"At least one persistent enemy from his Bregan D'aerthe days still remembers his name."},
+    {id:uid(),name:'Leafy',player:'',ancestry:'Elf (shapeshifter)',cls:'Druid — Circle of the Moon',ties:'The wilds / Emerald Enclave',lvl:4,hp:30,hpMax:30,portrait:'Leafy.png',
+     hook:"Raised by dire wolves in the High Forest; a shapeshifter who wears a pale elf's form (born Levi). Reads the world by instinct and loyalty, and fights best with four legs and a death roll.",
+     secret:"The last of his wolves is gone. The pack he guards now is all he has left."},
+    {id:uid(),name:'Bodrin',player:'',ancestry:'Dwarf',cls:'Monk',ties:'',lvl:4,hp:30,hpMax:30,portrait:'',
+     hook:"A booming-voiced dwarf monk and the crew's moral compass — always pushing them toward heroism over easy coin. A sharp navigator who's kept the party from getting lost in the sewers more than once.",
+     secret:"Invokes an 'old friend, Gimli, from another life.'"}
+  ],
+  chronicle:[
+    {id:uid(),date:'Session 19',title:'Star-Nerds & an Explosive Dock Party',body:"Staking out the Dock Ward for the half-elf killer, Leafy infiltrated a group of elves gathered for a nine-star celestial rite — and got welcomed as their ninth member. Then a moored ship erupted in flames: several elves dead, far more blood than fire alone explains. As Leafy revived a survivor, a dark figure watched from a nearby rooftop."},
+    {id:uid(),date:'Session 18',title:'Silver Linings & Shady Rats',body:"The Endshift Tavern's 'rats' turned out to be the Shard Shunners, a wererat gang — so the crew paid to have their weapons silvered before hitting the Dock Ward. They split up to shadow half-elf patrons into the night."},
+    {id:uid(),date:'Session 17',title:'Renovate Anyway',body:"Turned in 22 captured thugs to the Order of the Gauntlet for 1,650 gold, finally destroyed the drain-dwelling ooze at the manor (RIP one toilet), and hired the Fiddlewicks as staff. Renovations are underway and Lif approves."},
+    {id:uid(),date:'Session 16',title:'Bodrin & the Unnecessary Bloodbath',body:"The Field Ward brawl turned deadly — the Xanathar boss took Valek hostage and Valek dropped twice, nearly dying. Nyx put a crossbow bolt in the fleeing boss (recovering Valek's stolen Harper pin). Prisoners tied up, long rest earned."},
+    {id:uid(),date:'Session 15',title:'Gangland Brawls & Spite',body:"Waded into the Xanathar-vs-Zhentarim gang fight, dropping thugs nonlethally for bounty — towels on blades, lassos, and a fog cloud. A gun-toting Zhentarim lieutenant and a half-orc Xanathar boss escalated things fast."},
+    {id:uid(),date:'Session 14',title:'Gang Wars & Boomer Energy',body:"Took faction work — Savra of the Order of the Gauntlet (quell the Field Ward gangs) and the Emerald Enclave (animated scarecrows at the Harfoot farms, skeletons in the City of the Dead). Patrolled to the Endshift Tavern and found two gangs squaring off."},
+    {id:uid(),date:'Session 13',title:'Opera Night',body:"Attended The Fall of Tiamat at the Lightsinger Theater, mingling with Laeral Silverhand, the Blackstaff, and the Cassalanters. Mirt confirmed Valek as a Harper and handed out two missions (find Maxine the talking horse; assess Matrim Mareg's doppelgangers) plus Harper pins. Overheard talk of 'the other eye' and Devil Starsong."},
+    {id:uid(),date:'Session 12',title:'Toilets & Trauma',body:"Visited Dina Windsong, Lif's sister, and learned the manor's dark past — a hag's orphanage, Lif's murder, and a suspected traitor named Amber Goodleaf. Gained the family wine cellar and Lif's recipe book. Then a toilet ooze ambushed Valek mid-bathroom-break."},
+    {id:uid(),date:'Session 11',title:'Too Many Cats',body:"A talking cat invited Leafy to the Emerald Enclave at Phaulkonmere. At the Tiger's Eye, PI Vincent Trench traded on the crew's knowledge of the Stone of Golorr and set them a job: hunt a half-elf serial killer stalking the Dock Ward every three nights."},
+    {id:uid(),date:'Session 10',title:'Home Reno',body:"Toured Trollskull Alley, returned stolen scrolls to Bookworm's Treasure for goodwill (and a 10% discount), and signed a 1,000-gold renovation contract with Clint at the Bent Nail. A Harper paper bird arrived — an invitation to the opera."},
+    {id:uid(),date:'Session 9',title:'Haunted House Flippers',body:"Inspected Trollskull Manor and met Lif, the friendly half-elf ghost who haunts it. Signed the deed with Volo and the notary, opened talks with the Innkeepers' guild, and picked up the thread of Lif's unfinished business — a relative named Dina."},
+    {id:uid(),date:'Session 8',title:'Drugs, Gators & Minecart Chaos',body:"A laced joint at a party sent Valek, Nyx, and Leafy into a strange moonlit mine — minecarts, a giant crocodile, and little blue people who'd locked Bodrin away. A hazy interlude nobody fully remembers."},
+    {id:uid(),date:'Session 7',title:'The Blood Pact',body:"In a private suite, Renaer laid it bare — the Stone of Golorr, the sealed Neverember vault, and a fortune in embezzled gold dragons. The crew swore a blood pact to keep it from the Zhentarim and Xanathar. Renaer had secretly pulled one of the Stone's three eyes, so no one can use it yet."},
+    {id:uid(),date:'Session 6',title:'A Troll of a Night',body:"Returned Floon to the Yawning Portal; Volo paid them in the deed to Trollskull Manor instead of gold. A wounded troll erupted from the portal — Valek shoved it back down 140 feet. Renaer toasted them publicly as the 'Wardens of the Deep,' and Maloon War Dragon introduced himself with a Xanathar-marked card."},
+    {id:uid(),date:'Session 5',title:'The Sewer Olympics',body:"Cleared the Xanathar hideout, but the mind flayer Nihiloor slipped away. A runic portal chamber spat out gazers and worse; the crew fought a retreat, mapped a hidden escape route, and left a very unsettling golden mouse behind."},
+    {id:uid(),date:'Session 4',title:'The Great Brain Jar Heist',body:"Fought through goblins and a duergar security chief to the torture room, dropping a half-orc mage, a Xanathar thug, and an intellect devourer — and pulled Floon out alive at 1 HP. Recovered a map marked 'Sisk' in the City of the Dead."},
+    {id:uid(),date:'Session 3',title:'Sewer Edition',body:"Pushed deeper on the yellow Xanathar markings, sorting the factions out (beholder = Xanathar, winged snake = Zhentarim). Fought gazers, an ambush through a murder hole, and an intellect devourer piloting a corpse. Reached a sealed Xanathar door."},
+    {id:uid(),date:'Session 2',title:'Shitwater Crocs',body:"Hit the Candle Lane warehouse and found the Zhentarim and Xanathar had already slaughtered each other over it. Rescued Renaer alive (he gave a 500-gold note), learned Floon had been dragged into the sewers, and followed — into two death-rolling crocodiles."},
+    {id:uid(),date:'Session 1',title:"When the X's and Z's Attack",body:"Tracked Rick Wigglefingers from the Skewered Dragon and confirmed the Zhentarim set up Floon's kidnapping. A public scuffle drew the City Watch; the crew fled toward the Candle Lane warehouse with Rick in tow."}
+  ],
+  poi:[
+    {id:uid(),who:'Nihiloor',desc:"Escaped mind flayer of the Xanathar Guild. Runs intellect devourers and keeps spies across Waterdeep."},
+    {id:uid(),who:'Meloon Wardragon',desc:"Force Grey member gone sour, haunting the Yawning Portal. A Xanathar-marked card and a neck scar. The Blackstaff wants him watched; the Harpers suspect an intellect devourer."},
+    {id:uid(),who:'The Dock Ward killer — identified',desc:"He's the associate at the Tiger's Eye — Vincent Trench's own assistant, the man who handed us the case. Beheads elf and half-elf sailors in the night; leaves Luskan-made smoke grenades. Now to prove it and stop him."},
+    {id:uid(),who:'Vincent Trench',desc:"PI at the Tiger's Eye. Plays a deeper game and takes more information than he gives."},
+    {id:uid(),who:'Amber Goodleaf',desc:"Alias of an orphan the Windsongs suspect killed Lif — revenge for exposing the hag Mother Marcella."},
+    {id:uid(),who:'Matrim Mareg',desc:"Leads a gang of doppelgangers the Harpers want assessed for recruitment."},
+    {id:uid(),who:'Devil Starsong',desc:"Of the Doom Raiders (Zhentarim). Overheard at the opera in connection with 'the other eye.'"},
+    {id:uid(),who:'"Sisk" — City of the Dead',desc:"A recovered map of the City of the Dead is marked 'Sisk' — and the stolen bones and animated skeletons trace to crypts marked the same. Grave, cache, meeting point, or hideout?"}
+  ],
+  clues:[
+    {id:uid(),text:"THE STONE OF GOLORR — it seals the vault's location and has three eyes. Renaer secretly pulled one, so no one can use it yet. Open: how many pieces exist, and who holds the rest?"},
+    {id:uid(),text:"NEVEREMBER'S HOARD — a fortune in embezzled gold dragons hidden somewhere in Waterdeep, its location locked in the Stone. Both the Xanathar and the Zhentarim are hunting it, and we don't know what guards it."},
+    {id:uid(),text:"Lif's murder was never solved — the Windsongs suspect an orphan named Amber Goodleaf. Is justice still possible?"},
+    {id:uid(),text:"We hold a Xanathar keyring and a pearl necklace stamped with the Xanathar eye (magical) — worth asking the Blackstaff about."},
+    {id:uid(),text:"At the opera we overheard talk of 'the other eye' tied to Devil Starsong of the Doom Raiders (Zhentarim)."}
+  ],
+  factions:[
+    {name:'The Harpers',tag:'Altruists working behind the scenes to keep power from evil tyrants. Any smart, non-evil sort may join — bards and wizards especially. They meet in bustling inns like the Yawning Portal.',note:'Valek is a sworn agent running jobs for Mirt.',rep:3},
+    {name:'Order of the Gauntlet',tag:'Seeks out and destroys evil before it takes root. Non-evil folk welcome, especially clerics, monks and paladins of Helm, Torm, or Tyr.',note:'Cleaned up the Field Ward gangs for a fat bounty.',rep:2},
+    {name:'Emerald Enclave',tag:'Fosters harmony between nature and civilization; guards the city from aberrations and undead and watches the City of the Dead. Found at Phaulkonmere and the Snobeedle Meadery in Undercliff.',note:'Courting Leafy; hands out guardian work.',rep:1},
+    {name:"Bregan D'aerthe",tag:'A drow mercenary company operating quietly on the surface.',note:"Nyx's old handlers.",rep:1},
+    {name:"Lords' Alliance",tag:'A confederation of Sword Coast cities — Baldur\u2019s Gate, Neverwinter, Silverymoon and more — sworn to aid one another. Open to Waterdhavian citizens, even reformed criminals.',note:'Met Laeral at the opera — polite but noncommittal.',rep:0},
+    {name:'Force Grey (Gray Hands)',tag:'An elite cadre drawn from the Gray Hands, mobilized by the Open Lord as a last resort. Overseen by the Blackstaff; you work up to it by serving the city.',note:'Tapped by the Blackstaff to watch Meloon Wardragon.',rep:0},
+    {name:'The Zhentarim',tag:'The Black Network — mercenaries and goods traded for profit, always angling for political sway. Open recruitment; anyone can join.',note:'We keep arresting and killing their thugs. No love lost.',rep:-2},
+    {name:'Xanathar Guild',tag:'A brutal criminal mob with no real guild status. Membership means passing a test — always a serious crime — and infighting is often deadly.',note:'Open enemies since the sewer war.',rep:-2}
+  ],
+  contacts:[
+    {id:uid(),name:'Three Strings',role:'Tavern bard & Harper contact',rel:'ally',note:"Valek's closest thing to a friend. Gathers tidings and has stayed his hand more than once."},
+    {id:uid(),name:'Volothamp Geddarm',role:'Author & patron',rel:'ally',note:'Hired the crew, paid them in the Trollskull Manor deed, and is writing a book about them.'},
+    {id:uid(),name:'Renaer Neverember',role:'Harper; son of the exiled Open Lord',rel:'ally',note:'Rescued from the kidnapping. Sworn to the blood pact; secretly holds one eye of the Stone of Golorr.'},
+    {id:uid(),name:'Mirt the Merciless',role:'Harper — the Old Wolf',rel:'ally',note:'Wealthy, generous, and likely a Masked Lord; hands the crew their Harper missions. Found at his Sea Ward manor.'},
+    {id:uid(),name:'Dina Windsong',role:"Lif's sister",rel:'ally',note:"Survivor of the manor's orphanage days. Gave the crew the family wine cellar and Lif's recipe book."},
+    {id:uid(),name:'Lif',role:'Ghost of Trollskull Manor',rel:'ally',note:'Friendly half-elf spirit — the murdered former owner. Pleased to see his brew flowing again.'},
+    {id:uid(),name:'The Fiddlewicks',role:'Manor staff',rel:'ally',note:'Halfling siblings plus two friends, new to the city and unaffiliated. Hired to run the tavern.'},
+    {id:uid(),name:'Savra Belabranta',role:'Order of the Gauntlet',rel:'ally',note:'Contact at the Halls of Justice (temple of Tyr, Castle Ward); pays bounties for arrested gang members.'},
+    {id:uid(),name:'Floon Blagmaar',role:'Socialite',rel:'ally',note:'The man they were hired to find. Rescued from the sewers; looks enough like Renaer to be mistaken for him.'},
+    {id:uid(),name:'Durnan',role:'Keeper of the Yawning Portal',rel:'neutral',note:'Ageless former adventurer; waded into the troll fight himself with a greatsword.'},
+    {id:uid(),name:'Laeral Silverhand',role:'Open Lord of Waterdeep',rel:'neutral',note:"The city's ruler. Met at the opera; polite but noncommittal."},
+    {id:uid(),name:'Vajra \u2018Blackstaff\u2019 Safahr',role:'Archwizard; leads Force Grey',rel:'neutral',note:'Telepathically warned Nyx at the opera and reminded him of a private appointment.'},
+    {id:uid(),name:'Vincent Trench',role:'PI at the Tiger\u2019s Eye',rel:'neutral',note:'Sharp broker who trades for more than he gives. Set the Dock Ward murder job \u2014 and it turns out his own associate is the killer. What does Trench know?'},
+    {id:uid(),name:'Meloon Wardragon',role:'Force Grey member',rel:'neutral',note:'Once happy-go-lucky, now soured; haunts the Yawning Portal. The Blackstaff wants him watched, and the Harpers suspect an intellect devourer rides him. Carries a Xanathar-marked card; neck scar.'},
+    {id:uid(),name:'Gaxly Rudderbust',role:'Publisher, The Waterdeep Wazoo',rel:'neutral',note:'Runs a local broadsheet from the corner of Immar & Stallion in the North Ward. Target of an anonymous drop for Vincent Trench.'},
+    {id:uid(),name:'Broxley Fairkettle',role:'Fellowship of Innkeepers',rel:'neutral',note:'Local guild rep; joining keeps the tavern free of harassment and standard pricing.'},
+    {id:uid(),name:'Rachael the Page Turner',role:"Bookworm's Treasure",rel:'neutral',note:'Gold dragonborn bookseller; gave a discount for returned scrolls and is researching Lif\u2019s history.'},
+    {id:uid(),name:'Clint',role:'The Bent Nail',rel:'neutral',note:'Carpenter handling the manor renovations (1,000 gold, half down).'},
+    {id:uid(),name:'Melannor Fellbranch',role:'Emerald Enclave — Phaulkonmere',rel:'neutral',note:'Groundskeeper who set the crew on the farmland scarecrow and the bone-thief necromancer.'},
+    {id:uid(),name:'Jareth',role:'Emerald Enclave protector',rel:'neutral',note:'A demigoddess figure who met with Leafy at Phaulkonmere alongside Melannor.'},
+    {id:uid(),name:'Emmek Frewn',role:"Rival — Frewn's Brews",rel:'neutral',note:'Tried to buy Trollskull Manor and couldn\u2019t; now runs the pub next door. No love lost.'},
+    {id:uid(),name:'Nihiloor',role:'Mind flayer, Xanathar Guild',rel:'enemy',note:'Uses intellect devourers and spies across the city. Escaped the sewer hideout and still active.'},
+    {id:uid(),name:'Urstul Floxin',role:'Zhentarim leader',rel:'enemy',note:'Orchestrated the kidnapping of Renaer and Floon.'}
+  ],
+  contracts:[
+    {id:uid(),title:'Hunt the Dock Ward killer',status:'Active',reward:"Tiger's Eye pay (50 gp/head)",note:"Elf and half-elf sailors decapitated in the night. IDENTIFIED: the killer is Vincent Trench's own associate at the Tiger's Eye — the man who handed us the case. Now to prove it and bring him down."},
+    {id:uid(),title:'Quell the Field Ward gangs',status:'Active',reward:'Order of the Gauntlet bounty',note:'Zhents are paying gangs to hit suspected Xanathar members. Stop a fight before it starts and send a message (Savra Belabranta). Already turned in 22 thugs for 1,650 gp — the ward is still hot.'},
+    {id:uid(),title:'The Endshift Tavern robberies',status:'Active',reward:'35 gp',note:"Guards robbed nightly; giant rats in the back alleys (Savra Belabranta). The 'rats' are the Shard Shunners — a wererat gang. Weapons now silvered."},
+    {id:uid(),title:'Observe Meloon Wardragon',status:'Active',reward:"The Blackstaff's favor",note:'A Force Grey member gone strangely sour, lingering at the Yawning Portal. Watch him for a tenday, then report to Vajra Safahr. (The Harpers suspect an intellect devourer.)'},
+    {id:uid(),title:'Reopen Trollskull Manor',status:'Active',reward:'A guild hall + tavern income',note:'Renovations underway with the Bent Nail; staff hired; ooze cleared.'},
+    {id:uid(),title:'Found the Wardens of the Deep',status:'Active',reward:'A company that endures',note:'Our standing purpose — build the guild, earn standing, gather the right people.'},
+    {id:uid(),title:'The farmland scarecrow',status:'Lead',reward:'Emerald Enclave favor',note:'A scarecrow come to life is slaughtering livestock and spooking the outlying farms — no deaths yet, so the City Guard drags its heels (Melannor Fellbranch).'},
+    {id:uid(),title:'Catch the bone-thief necromancer',status:'Lead',reward:'20 gp each + a healing potion',note:"Someone is stealing bones from the City of the Dead and raising them as skeletons — last seen at crypts marked 'Sisk,' the same name on our recovered map (Melannor Fellbranch)."},
+    {id:uid(),title:'Find Maxeene the talking mare',status:'Lead',reward:'50 gp',note:'A dray mare who talks — learn whether she has identified any Zhent operatives, and where they are (Mirt).'},
+    {id:uid(),title:'Deliver the anonymous exposé',status:'Lead',reward:"Tiger's Eye pay",note:'Leave a story on the desk of Gaxly Rudderbust, publisher of The Waterdeep Wazoo (Immar & Stallion, North Ward) — without him knowing who wrote it (Vincent Trench).'},
+    {id:uid(),title:'Court the Skewered Dragon brewmaster',status:'Lead',reward:'A signature house ale',note:"The Skewered Dragon's blacklisted brewmaster makes exceptional, exclusive ale. Secure brewing rights or a supply deal to make it the manor's signature pour."},
+    {id:uid(),title:'Recruit the Yawning Portal dancers',status:'Lead',reward:'A packed house',note:"The Sea Maidens' Fair dancers won't sail for another month. Book them for weekly shows or the grand opening to pull a crowd."},
+    {id:uid(),title:'Find Floon Blagmaar',status:'Done',reward:'The Trollskull Manor deed',note:"Volo's missing friend, recovered from the Xanathar's sewer lair."},
+    {id:uid(),title:'Return the stolen scrolls',status:'Done',reward:"Goodwill + 10% at Bookworm's",note:'Gave back seven scrolls to build neighborhood cred.'}
+  ],
+  treasury:{ goal:0, ledger:[
+    {id:uid(),label:"Renaer's promissory note",amt:500,type:'in'},
+    {id:uid(),label:'Order of the Gauntlet bounty (22 thugs)',amt:1650,type:'in'},
+    {id:uid(),label:"Zhentarim captain's pouch",amt:300,type:'in'},
+    {id:uid(),label:'Fenced paintings & silver bars (60%)',amt:675,type:'in'},
+    {id:uid(),label:'Ornate silver dagger, sold',amt:200,type:'in'},
+    {id:uid(),label:'Coin from captured thugs',amt:87,type:'in'},
+    {id:uid(),label:'Manor renovation deposit (Bent Nail)',amt:500,type:'out'},
+    {id:uid(),label:'City permit',amt:50,type:'out'},
+    {id:uid(),label:'Business license',amt:200,type:'out'},
+    {id:uid(),label:"Tailor deposit (Sven's Stitches)",amt:50,type:'out'},
+    {id:uid(),label:'Weapon & ammo silvering',amt:120,type:'out'},
+    {id:uid(),label:'Carriage to the opera',amt:1,type:'out'}
+  ] },
+  manor:{ brew:"Undecided — 'Last Call' vs 'Lif's Legacy'",
+    staff:['The Fiddlewicks — halfling siblings + two friends (live-in)'],
+    renovations:[
+      {id:uid(),name:'Sign renovation contract (Bent Nail)',done:true},
+      {id:uid(),name:'City permit & business license',done:true},
+      {id:uid(),name:'Clear the drain ooze',done:true},
+      {id:uid(),name:'Hire staff (the Fiddlewicks)',done:true},
+      {id:uid(),name:'Main structural repairs & carpentry',done:false},
+      {id:uid(),name:'Weekly performances & drink specials',done:false},
+      {id:uid(),name:'Themed & adventurer networking nights',done:false},
+      {id:uid(),name:'A neutral, Harper-friendly gathering place',done:false},
+      {id:uid(),name:'Grand reopening',done:false}
+    ]},
+  quotes:[
+    {id:uid(),text:'"I cast Detect Magic on the tavern. \u2026It\u2019s haunted." \u2014 everyone, immediately',by:'The table'},
+    {id:uid(),text:'"I learned that from my old friend, Gimli, in another life."',by:'Bodrin'},
+    {id:uid(),text:'"If you bleed a lot, it\u2019s moderate. If you don\u2019t bleed at all, it\u2019s easy. If you die, you probably should\u2019ve stayed home."',by:'Nyx, on difficulty'},
+    {id:uid(),text:'"We got plenty of time to get in here, smack a bitch up, get to the opera."',by:'Leafy'},
+    {id:uid(),text:'"I swore an oath to protect the innocent \u2014 good thing you\u2019re looking guilty as hell, girl."',by:'Valek, to a librarian'},
+    {id:uid(),text:'"Foreskin Manor."',by:'Nyx, re: Trollskull'},
+    {id:uid(),text:'"Bodrin, brown belly balance beard, at your service."',by:'Bodrin'},
+    {id:uid(),text:'"I got attacked by a life-sized shit. I sat down. It ate my ass. I jumped out the window."',by:'Valek, recapping the toilet ooze'}
+  ],
+  suggestions:[ {id:uid(),text:'Example: a dice roller, a "next session" countdown, a search box… delete this and drop your own ideas.',by:'Claude',status:'Idea'} ],
+  mapUrl:'https://www.aidedd.org/atlas/waterdeep'
+}; }
+
+const TABS=[
+  ['charter','Charter'],['roster','Roster'],['chronicle','Chronicle'],['manor','The Manor'],['leads','Leads'],
+  ['treasury','Treasury'],['factions','Factions'],['contracts','Contracts'],
+  ['contacts','Contacts'],['map','Map'],['talk','Table Talk'],['suggest','Suggestions']
+];
+let state, active='charter';
+function uid(){return Math.random().toString(36).slice(2,9)}
+function withDefaults(s){ if(!s||typeof s!=='object') return defaults(); const d=defaults(); for(const k in d){ if(s[k]===undefined) s[k]=d[k]; } return s; }
+function esc(s){return (s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ---- Image finder: tries the repo root and common folders so portraits/banner
+        work no matter where the PNGs live. Absolute URLs are used as-is. ---- */
+const IMG_CANDIDATES = ['', 'images/', 'img/', 'assets/', 'art/', 'portraits/'];
+function resolveImg(src, cb){
+  if(!src){ cb(null); return; }
+  if(/^(https?:|\/|data:)/i.test(src) || src.includes('/')){
+    const im=new Image(); im.onload=()=>cb(src); im.onerror=()=>cb(null); im.src=src; return;
+  }
+  let i=0;
+  (function tryNext(){
+    if(i>=IMG_CANDIDATES.length){ cb(null); return; }
+    const url=IMG_CANDIDATES[i++]+src;
+    const im=new Image(); im.onload=()=>cb(url); im.onerror=tryNext; im.src=url;
+  })();
+}
+function mountBanner(){
+  const header=document.querySelector('header.hero');
+  if(!header || header.querySelector('.wotd-banner')) return;
+  resolveImg('Group.png', url=>{
+    if(!url) return;
+    const b=document.createElement('div');
+    b.className='wotd-banner';
+    b.style.backgroundImage="url('"+url+"')";
+    header.insertBefore(b, header.firstChild);
+  });
+}
+
+(async function(){
+  initStore();
+  // Render immediately with defaults so the page ALWAYS appears, even if storage is slow.
+  state = defaults();
+  buildTabs(); renderStatus(); render(); setFooter(); gateInit(); mountBanner();
+  // Hydrate from the store in the background, with a timeout so a stalled DB can't hang us.
+  let saved=null;
+  try{ saved = await Promise.race([ readStore(), new Promise(r=>setTimeout(()=>r('__timeout'),4500)) ]); }
+  catch(e){ saved=null; }
+  if(saved && saved!=='__timeout'){
+    state=withDefaults(saved); lastSynced=JSON.stringify(state); renderStatus(); render();
+  } else {
+    lastSynced=JSON.stringify(state);
+    if(saved===null && mode==='firebase'){ try{ await dbRef.set(state); }catch(e){} } // seed an empty DB (never on timeout)
+  }
+  if(mode==='firebase' && dbRef){
+    dbRef.on('value', snap=>{
+      if(!snap.exists()) return;
+      const incoming=JSON.stringify(snap.val());
+      if(incoming===lastSynced) return;                                  // our own write echoing back
+      if(document.getElementById('modalBg').classList.contains('on')) return; // don't interrupt someone editing
+      state=withDefaults(snap.val()); lastSynced=incoming; renderStatus(); render();
+    });
+  }
+})();
+
+function buildTabs(){
+  const r=document.getElementById('tabrow');
+  r.innerHTML=TABS.map(([k,label])=>`<button class="tab ${k===active?'active':''}" data-tab="${k}">${label}</button>`).join('');
+  r.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{active=b.dataset.tab;buildTabs();render();window.scrollTo({top:document.querySelector('nav').offsetTop-4,behavior:'smooth'})});
+}
+function renderStatus(){
+  const c=state.campaign;
+  document.getElementById('statusStrip').innerHTML=`
+    <div class="cell"><div class="k">In-Game Date</div><div class="v" data-edit="inGameDate">${esc(c.inGameDate)}</div></div>
+    <div class="cell"><div class="k">Wardens</div><div class="v">${state.heroes.length} sworn</div></div>
+    <div class="cell"><div class="k">Current Focus</div><div class="v" data-edit="focus">${esc(c.focus)}</div></div>
+    <div class="cell"><div class="k">Next Session</div><div class="v" data-edit="nextSession">${esc(c.nextSession)}</div></div>`;
+  document.querySelectorAll('#statusStrip [data-edit]').forEach(el=>{ el.style.cursor='pointer'; el.title='Click to edit';
+    el.onclick=()=>{const nv=prompt('Update:',state.campaign[el.dataset.edit]);if(nv!==null){state.campaign[el.dataset.edit]=nv;renderStatus();queueSave();}};});
+}
+
+function render(){
+  document.getElementById('main').innerHTML=`<div class="panel on">${({
+    charter:renderCharter,roster:renderRoster,chronicle:renderChronicle,manor:renderManor,leads:renderLeads,treasury:renderTreasury,
+    factions:renderFactions,contracts:renderContracts,contacts:renderContacts,map:renderMap,talk:renderTalk,suggest:renderSuggest
+  })[active]()}</div>`;
+  wire();
+  document.querySelectorAll('.avatar[data-portrait]').forEach(el=>{
+    resolveImg(el.dataset.portrait, url=>{ if(url){ el.style.backgroundImage="url('"+url+"')"; el.textContent=''; } });
+  });
+}
+function head(t,p,btn){return `<div class="sec-head"><div><h2>${t}</h2><p>${p}</p></div>${btn||''}</div>`}
+
+function renderCharter(){
+  const sigs=state.heroes.map(h=>`<span class="sig">${esc(h.name)}</span>`).join('');
+  return head('The Charter','Our reason for being. This is the guild we swore to build \u2014 edit the creed to match your table\u2019s voice.',
+    `<button class="btn sm" data-edit-creed>Edit creed</button>`)+
+    `<div class="card charter">
+       <div class="eyebrow">Sworn this day in the City of Splendors</div>
+       <p class="creed">${esc(state.charter.creed)}</p>
+       <div class="rule"></div>
+       <div class="eyebrow">Founding members</div>
+       <div class="sigs">${sigs}</div>
+     </div>`;
+}
+function renderRoster(){
+  const cards=state.heroes.map(h=>{
+    const av=h.portrait?`data-portrait="${esc(h.portrait)}"`:'';
+    const init=esc((h.name||'?').trim().charAt(0).toUpperCase());
+    const pct=h.hpMax?Math.max(0,Math.min(100,Math.round(h.hp/h.hpMax*100))):0;
+    const tie=h.ties?`<span class="tag" style="margin-top:8px">${esc(h.ties)}</span>`:'';
+    return `<div class="card hero-card">
+      <button class="del" data-del-hero="${h.id}" title="Remove">\u2715</button>
+      <div class="row"><div class="avatar" ${av}>${h.portrait?'':init}</div>
+        <div><h3>${esc(h.name)}</h3><div class="sub">${esc([h.ancestry,h.cls].filter(Boolean).join(' \u00b7 ')||'unclassed')} \u00b7 Lvl ${esc(h.lvl)}</div></div></div>
+      <div class="mono" style="margin-top:10px;font-size:.75rem">HP ${esc(h.hp)} / ${esc(h.hpMax)}<div class="barwrap"><div class="bar" style="width:${pct}%"></div></div></div>
+      <p style="margin:12px 0 4px;font-size:.92rem"><b style="color:var(--verdigris)">Hook \u00b7 </b>${esc(h.hook)}</p>
+      ${tie}
+      <div class="row" style="margin-top:12px"><button class="btn sm" data-edit-hero="${h.id}">Edit</button></div>
+    </div>`;
+  }).join('');
+  return head('The Roster','The four who signed the charter. Fill in your own details, and drop in a portrait URL when you have art.',
+    `<button class="btn gold" data-add-hero>+ Add hero</button>`)+`<div class="grid g2">${cards}</div>`;
+}
+function renderChronicle(){
+  const entries=state.chronicle.map(e=>`<div class="log-entry">
+    <button class="del" style="position:absolute;right:0;top:0" data-del-log="${e.id}">\u2715</button>
+    <div class="date">${esc(e.date)}</div><h3>${esc(e.title)}</h3><p>${esc(e.body)}</p></div>`).join('')
+    || `<div class="empty">No sessions logged yet. Add what happened after each game so nobody argues about it next week.</div>`;
+  return head('The Chronicle','A running journal of our story so far. Newest at the top.',
+    `<button class="btn gold" data-add-log>+ Log a session</button>`)+`<div style="max-width:760px">${entries}</div>`;
+}
+function renderLeads(){
+  const poi=state.poi.map((p,i)=>`<div class="poi" style="--r:${[-2,1.5,-1,2][i%4]}deg;padding-right:44px">
+    <button class="del" style="position:absolute;right:24px;top:2px" data-edit-poi="${p.id}" title="Edit">\u270e</button>
+    <button class="del" style="position:absolute;right:6px;top:2px" data-del-poi="${p.id}" title="Remove">\u2715</button>
+    <div class="who">${esc(p.who)}</div><div class="desc">${esc(p.desc)}</div></div>`).join('')
+    || `<div class="empty" style="grid-column:1/-1">No persons of interest yet. Add anyone the crew is watching or wondering about.</div>`;
+  const clues=state.clues.map((cl,i)=>`<div class="clue" style="--r:${[1,-1.5,.8,-1][i%4]}deg;padding-right:40px">
+    <button class="del" style="position:absolute;right:22px;top:2px" data-edit-clue="${cl.id}" title="Edit">\u270e</button>
+    <button class="del" style="position:absolute;right:6px;top:2px" data-del-clue="${cl.id}" title="Remove">\u2715</button>${esc(cl.text)}</div>`).join('')
+    || `<div class="empty" style="grid-column:1/-1">No leads pinned. Add rumors, questions, and threads to pull.</div>`;
+  return head('Leads & the Board','Our own investigation wall \u2014 only what we\u2019ve seen, heard, or suspect. Pin people to watch and threads to pull.',
+    `<div class="row"><button class="btn sm" data-add-poi>+ Person</button><button class="btn gold" data-add-clue>+ Lead</button></div>`)+
+    `<div class="board">
+       <div class="eyebrow" style="margin-bottom:12px">Persons of interest</div>
+       <div class="grid g3">${poi}</div>
+       <div class="eyebrow" style="margin:22px 0 12px">Pinned leads</div>
+       <div class="grid g3">${clues}</div>
+     </div>`;
+}
+function renderTreasury(){
+  const t=state.treasury;
+  const held=t.ledger.filter(l=>l.type==='in').reduce((a,b)=>a+ +b.amt,0)-t.ledger.filter(l=>l.type==='out').reduce((a,b)=>a+ +b.amt,0);
+  const goalBar = t.goal>0 ? `<div class="mono" style="font-size:.72rem;color:var(--muted);margin-top:8px">Goal: ${(+t.goal).toLocaleString()} gp \u00b7 ${Math.max(0,Math.min(100,(held/t.goal*100))).toFixed(1)}%</div>`:'';
+  const lines=t.ledger.map(l=>`<div class="line ${l.type==='out'?'neg':''}">
+    <span><button class="del" data-del-led="${l.id}" style="margin-right:8px">\u2715</button>${esc(l.label)}</span>
+    <span class="amt">${l.type==='out'?'\u2212':'+'}${(+l.amt).toLocaleString()} gp</span></div>`).join('');
+  return head('Guild Treasury','The Wardens\u2019 coffer. Log what comes in and what goes out; set a savings goal if you\u2019re building toward something.',
+    `<button class="btn sm" data-set-goal>Set goal</button>`)+
+    `<div class="coffer"><div class="lbl">In the coffer</div><div class="amt">${held.toLocaleString()} gp</div>${goalBar}</div>
+     <div class="card ledger" style="margin-top:18px">
+       <div class="row spread"><h3>Ledger</h3><button class="btn sm" data-add-led>+ Entry</button></div>
+       <div style="margin-top:8px">${lines}</div></div>`;
+}
+function renderFactions(){
+  const rows=state.factions.map((f,idx)=>{
+    let pips='';
+    for(let n=-2;n<=3;n++){ if(n===0) continue;
+      const on = f.rep>0 ? (n>0&&n<=f.rep) : (n<0&&n>=f.rep);
+      pips+=`<div class="pip ${on?(n<0?'neg':'fill'):''}" data-fac="${idx}" data-rep="${n}" title="${n>0?'Renown +'+n:'Enmity '+n}"></div>`;
+    }
+    const word = f.rep>=2?'Trusted':f.rep===1?'Friendly':f.rep===0?'Neutral':f.rep===-1?'Wary':'Hostile';
+    const note = f.note ? `<small class="stand">${esc(f.note)}</small>` : '';
+    return `<div class="fac"><div class="nm"><b>${esc(f.name)}</b><small>${esc(f.tag)}</small>${note}</div>
+      <div style="text-align:right;flex:none"><div class="pips">${pips}</div><small class="mono" style="color:var(--muted);font-size:.6rem;letter-spacing:.1em">${word}</small></div></div>`;
+  }).join('');
+  return head('Factions & Renown','What the city knows about each faction, plus where the Wardens stand. Gold pips are standing, red is enmity \u2014 click the pips to update.','')+`<div class="card">${rows}</div>`;
+}
+function renderContracts(){
+  const order={Active:0,Lead:1,Done:2};
+  const items=[...state.contracts].sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)).map(q=>{
+    const cls=q.status==='Done'?'ally':q.status==='Active'?'neutral':'';
+    return `<div class="card"><button class="del" data-del-q="${q.id}" style="position:absolute;right:12px;top:12px">\u2715</button>
+      <span class="tag ${cls}">${esc(q.status)}</span>
+      <h3 style="margin:10px 0 4px">${esc(q.title)}</h3>
+      <p style="margin:0;color:var(--muted);font-size:.9rem">${esc(q.note)}</p>
+      <p style="margin:10px 0 0;font-size:.85rem"><b style="color:var(--brass)">Reward \u00b7 </b>${esc(q.reward)}</p>
+      <div class="row" style="margin-top:12px"><button class="btn sm" data-edit-q="${q.id}">Edit</button></div></div>`;
+  }).join('') || `<div class="empty">No open jobs. Go find some trouble worth coin.</div>`;
+  return head('The Job Board','Jobs, leads, and guild work \u2014 what the Wardens are chasing right now.',
+    `<button class="btn gold" data-add-q>+ Post a job</button>`)+`<div class="grid g2">${items}</div>`;
+}
+function renderContacts(){
+  const cards=state.contacts.map(n=>`<div class="card">
+    <button class="del" data-del-c="${n.id}" style="position:absolute;right:12px;top:12px">\u2715</button>
+    <span class="tag ${n.rel}">${n.rel}</span>
+    <h3 style="margin:10px 0 2px">${esc(n.name)}</h3><div class="sub">${esc(n.role)}</div>
+    <p style="margin:10px 0 0;font-size:.9rem;color:var(--parchment)">${esc(n.note)}</p>
+    <div class="row" style="margin-top:12px"><button class="btn sm" data-edit-c="${n.id}">Edit</button></div></div>`).join('');
+  return head('Contacts of the City','People we know of, and people we\u2019ve met. Add new faces as the crew crosses paths with them.',
+    `<button class="btn gold" data-add-c>+ Add contact</button>`)+`<div class="grid g2">${cards}</div>`;
+}
+function renderMap(){
+  const u=state.mapUrl;
+  return head('Chart of Waterdeep','The interactive atlas our table uses, plus the city facts from the primer.','')+
+    `<div class="card">
+      ${u?`<a class="btn gold" href="${esc(u)}" target="_blank" rel="noopener">Open the interactive map \u2197</a>`:''}
+      <label class="fld" style="margin-top:14px"><span class="lbl">Map URL</span><input data-map value="${esc(u)}"></label>
+      <div class="grid g3" style="margin-top:8px">
+        ${[['Our HQ','Trollskull Manor \u2014 Trollskull Alley, North Ward'],['Dock Ward','The Skewered Dragon & the killer\u2019s hunting ground'],['Dock Ward','Candle Lane \u2014 the kidnapping warehouse'],['Castle Ward','Yawning Portal & the Lightsinger Theater'],['Sea Ward','Neverember House & Mirt\u2019s manor'],['Southern Ward','Phaulkonmere \u2014 the Emerald Enclave'],['City of the Dead','The \u2018Sisk\u2019 lead & the walking bones'],['Undercity','The Xanathar\u2019s sewers \u2014 follow the yellow marks']]
+          .map(([k,v])=>`<div class="card" style="padding:12px 14px"><div class="sub">${k}</div><div style="font-family:var(--disp);color:var(--foam);margin-top:2px;font-size:.98rem">${v}</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+function renderTalk(){
+  const q=state.quotes.map(x=>`<div class="card" style="padding:16px">
+    <button class="del" data-del-quote="${x.id}" style="position:absolute;right:12px;top:10px">\u2715</button>
+    <p style="font-family:var(--disp);font-size:1.05rem;color:var(--foam);margin:0;line-height:1.35">${esc(x.text)}</p>
+    <div class="sub" style="margin-top:8px">\u2014 ${esc(x.by)}</div></div>`).join('')
+    || `<div class="empty">No quotes yet. Start writing down the cursed things your friends say at the table.</div>`;
+  return head('Table Talk','The out-of-context hall of fame.',
+    `<button class="btn gold" data-add-quote>+ Add a quote</button>`)+`<div class="grid g2">${q}</div>`;
+}
+
+function renderManor(){
+  const m=state.manor;
+  const rens=m.renovations.map(r=>`<label class="row" style="gap:8px;padding:8px 0;border-bottom:1px solid var(--line-soft)">
+    <input type="checkbox" data-mren="${r.id}" ${r.done?'checked':''} style="width:auto">
+    <span style="${r.done?'color:var(--verdigris)':''}">${esc(r.name)}</span>
+    <button class="del" data-del-mren="${r.id}" style="margin-left:auto">\u2715</button></label>`).join('');
+  const staff=m.staff.map(s=>`<li style="margin-bottom:4px">${esc(s)}</li>`).join('') || '<li style="color:var(--muted)">No staff hired yet.</li>';
+  return head('Trollskull Manor','Our hall in Trollskull Alley, North Ward \u2014 a four-story fixer-upper won from Volo. Renovations underway; one resident ghost included.','')+
+    `<div class="grid g2">
+      <div class="card">
+        <div class="row spread"><div class="sub">Renovations & plans</div><button class="btn sm" data-add-mren>+ Task</button></div>
+        <div style="margin-top:8px">${rens}</div>
+      </div>
+      <div class="card">
+        <label class="fld"><span class="lbl">House brew name</span><input data-brew value="${esc(m.brew)}"></label>
+        <div class="sub" style="margin-top:6px">Staff</div>
+        <ul style="margin:6px 0 0;padding-left:18px;color:var(--parchment);font-size:.92rem">${staff}</ul>
+      </div>
+      <div class="card">
+        <div class="sub">The Ghost</div><h3 style="margin:4px 0 6px">Lif</h3>
+        <p style="margin:0;font-size:.92rem">The manor\u2019s resident spirit \u2014 a half-elf and the murdered former owner, killed here some 50\u201360 years ago. Friendly, and pleased to see his brew flowing again. Brother of Dina Windsong.</p>
+      </div>
+      <div class="card">
+        <div class="sub">History</div>
+        <p style="margin:6px 0 0;font-size:.92rem">Once an orphanage run by the hag Mother Marcella, who preyed on the children. Lif and Dina escaped; Lif later bought the manor to redeem it before he was murdered. The family\u2019s prime suspect is an orphan named Amber Goodleaf (an alias).</p>
+      </div>
+    </div>`;
+}
+
+function renderSuggest(){
+  const order={Idea:0,Building:1,Done:2};
+  const items=[...(state.suggestions||[])].sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)).map(s=>{
+    const cls=s.status==='Done'?'ally':s.status==='Building'?'neutral':'';
+    return `<div class="card"><button class="del" data-del-sug="${s.id}" style="position:absolute;right:12px;top:12px">\u2715</button>
+      <span class="tag ${cls}">${esc(s.status||'Idea')}</span>
+      <p style="margin:12px 0 0;font-size:.98rem;color:var(--foam)">${esc(s.text)}</p>
+      ${s.by?`<div class="sub" style="margin-top:8px">\u2014 ${esc(s.by)}</div>`:''}
+      <div class="row" style="margin-top:12px"><button class="btn sm" data-edit-sug="${s.id}">Edit</button></div></div>`;
+  }).join('') || `<div class="empty">No suggestions yet. Drop ideas here \u2014 features, fixes, wild stuff \u2014 and Tyler will build them.</div>`;
+  return head('Suggestions','A scratchpad for the crew: what should this site do next? Add ideas, mark what\u2019s building, and they\u2019ll get picked up. (Temporary \u2014 we\u2019ll retire this once the wishlist is done.)',
+    `<button class="btn gold" data-add-sug>+ Add idea</button>`)+`<div class="grid g2">${items}</div>`;
+}
+
+/* ---- WIRING ---- */
+function wire(){
+  const q=s=>document.querySelectorAll(s);
+  q('[data-edit-creed]').forEach(b=>b.onclick=()=>creedModal());
+  q('[data-add-hero]').forEach(b=>b.onclick=()=>heroModal());
+  q('[data-edit-hero]').forEach(b=>b.onclick=()=>heroModal(b.dataset.editHero));
+  q('[data-del-hero]').forEach(b=>b.onclick=()=>{state.heroes=state.heroes.filter(h=>h.id!==b.dataset.delHero);renderStatus();save();});
+  q('[data-add-log]').forEach(b=>b.onclick=()=>logModal());
+  q('[data-del-log]').forEach(b=>b.onclick=()=>{state.chronicle=state.chronicle.filter(e=>e.id!==b.dataset.delLog);save();});
+  q('[data-add-poi]').forEach(b=>b.onclick=()=>poiModal());
+  q('[data-del-poi]').forEach(b=>b.onclick=()=>{state.poi=state.poi.filter(p=>p.id!==b.dataset.delPoi);save();});
+  q('[data-edit-poi]').forEach(b=>b.onclick=()=>poiModal(b.dataset.editPoi));
+  q('[data-add-clue]').forEach(b=>b.onclick=()=>{const t=prompt('Pin a lead:');if(t){state.clues.push({id:uid(),text:t});save();}});
+  q('[data-del-clue]').forEach(b=>b.onclick=()=>{state.clues=state.clues.filter(c=>c.id!==b.dataset.delClue);save();});
+  q('[data-edit-clue]').forEach(b=>b.onclick=()=>{const c=state.clues.find(x=>x.id===b.dataset.editClue);const t=prompt('Edit lead:',c.text);if(t!==null){c.text=t;save();}});
+  q('[data-add-led]').forEach(b=>b.onclick=()=>ledgerModal());
+  q('[data-del-led]').forEach(b=>b.onclick=()=>{state.treasury.ledger=state.treasury.ledger.filter(l=>l.id!==b.dataset.delLed);save();});
+  q('[data-set-goal]').forEach(b=>b.onclick=()=>{const g=prompt('Savings goal in gp (0 for none):',state.treasury.goal);if(g!==null){state.treasury.goal=+g||0;save();}});
+  q('[data-fac]').forEach(p=>p.onclick=()=>{const f=state.factions[+p.dataset.fac];const r=+p.dataset.rep;f.rep=(f.rep===r)?0:r;save();});
+  q('[data-add-q]').forEach(b=>b.onclick=()=>contractModal());
+  q('[data-edit-q]').forEach(b=>b.onclick=()=>contractModal(b.dataset.editQ));
+  q('[data-del-q]').forEach(b=>b.onclick=()=>{state.contracts=state.contracts.filter(x=>x.id!==b.dataset.delQ);save();});
+  q('[data-add-c]').forEach(b=>b.onclick=()=>contactModal());
+  q('[data-edit-c]').forEach(b=>b.onclick=()=>contactModal(b.dataset.editC));
+  q('[data-del-c]').forEach(b=>b.onclick=()=>{state.contacts=state.contacts.filter(x=>x.id!==b.dataset.delC);save();});
+  q('[data-map]').forEach(i=>i.oninput=()=>{state.mapUrl=i.value;queueSave();});
+  q('[data-brew]').forEach(i=>i.oninput=()=>{state.manor.brew=i.value;queueSave();});
+  q('[data-mren]').forEach(c=>c.onchange=()=>{const r=state.manor.renovations.find(x=>x.id===c.dataset.mren);r.done=c.checked;save();});
+  q('[data-del-mren]').forEach(b=>b.onclick=()=>{state.manor.renovations=state.manor.renovations.filter(r=>r.id!==b.dataset.delMren);save();});
+  q('[data-add-mren]').forEach(b=>b.onclick=()=>{const n=prompt('Renovation / task:');if(n){state.manor.renovations.push({id:uid(),name:n,done:false});save();}});
+  q('[data-add-quote]').forEach(b=>b.onclick=()=>quoteModal());
+  q('[data-del-quote]').forEach(b=>b.onclick=()=>{state.quotes=state.quotes.filter(x=>x.id!==b.dataset.delQuote);save();});
+  q('[data-add-sug]').forEach(b=>b.onclick=()=>suggestModal());
+  q('[data-edit-sug]').forEach(b=>b.onclick=()=>suggestModal(b.dataset.editSug));
+  q('[data-del-sug]').forEach(b=>b.onclick=()=>{state.suggestions=(state.suggestions||[]).filter(x=>x.id!==b.dataset.delSug);save();});
+}
+function save(){queueSave();render();}
+
+/* ---- MODALS ---- */
+const modalBg=document.getElementById('modalBg'), modal=document.getElementById('modal');
+modalBg.onclick=e=>{if(e.target===modalBg)closeModal();};
+function closeModal(){modalBg.classList.remove('on');}
+function openModal(html){modal.innerHTML=html;modalBg.classList.add('on');const c=modal.querySelector('[data-close]');if(c)c.onclick=closeModal;}
+function fld(lbl,name,val='',type='text'){return `<label class="fld"><span class="lbl">${lbl}</span><input data-f="${name}" type="${type}" value="${esc(val)}"></label>`}
+function area(lbl,name,val=''){return `<label class="fld"><span class="lbl">${lbl}</span><textarea data-f="${name}">${esc(val)}</textarea></label>`}
+function collect(){const o={};modal.querySelectorAll('[data-f]').forEach(i=>o[i.dataset.f]=i.value);return o;}
+
+function creedModal(){
+  openModal(`<h3>Edit the creed</h3>${area('The Wardens\u2019 creed','creed',state.charter.creed)}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">Save creed</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.creed)state.charter.creed=d.creed;closeModal();save();};
+}
+function heroModal(id){
+  const h=id?state.heroes.find(x=>x.id===id):{};
+  openModal(`<h3>${id?'Edit hero':'New hero'}</h3>
+    ${fld('Character name','name',h.name)}
+    <div class="row"><div style="flex:1">${fld('Player','player',h.player)}</div><div style="flex:1">${fld('Level','lvl',h.lvl||1,'number')}</div></div>
+    <div class="row"><div style="flex:1">${fld('Ancestry','ancestry',h.ancestry)}</div><div style="flex:1">${fld('Class','cls',h.cls)}</div></div>
+    <div class="row"><div style="flex:1">${fld('HP now','hp',h.hp||10,'number')}</div><div style="flex:1">${fld('HP max','hpMax',h.hpMax||10,'number')}</div></div>
+    ${fld('Ties / affiliation','ties',h.ties)}
+    ${fld('Portrait image URL','portrait',h.portrait)}
+    ${area('Hook','hook',h.hook)}${area('Secret (for you & the DM)','secret',h.secret)}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">Save hero</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();d.lvl=+d.lvl;d.hp=+d.hp;d.hpMax=+d.hpMax;
+    if(id)Object.assign(h,d);else state.heroes.push({id:uid(),...d});closeModal();renderStatus();save();};
+}
+function logModal(){
+  openModal(`<h3>Log a session</h3>${fld('Session label / date','date','Session '+(state.chronicle.length+1))}
+    ${fld('Title','title')}${area('What happened','body')}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">Add to chronicle</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.title||d.body)state.chronicle.unshift({id:uid(),...d});closeModal();save();};
+}
+function poiModal(id){
+  const p=id?state.poi.find(x=>x.id===id):{};
+  openModal(`<h3>${id?'Edit person of interest':'Person of interest'}</h3>${fld('Name','who',p.who)}${area('What we know / suspect','desc',p.desc)}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">${id?'Save':'Pin to board'}</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.who){ if(id)Object.assign(p,d); else state.poi.push({id:uid(),...d}); } closeModal();save();};
+}
+function ledgerModal(){
+  openModal(`<h3>Ledger entry</h3>${fld('Label','label')}${fld('Amount (gp)','amt',0,'number')}
+    <label class="fld"><span class="lbl">Type</span><select data-f="type"><option value="in">Income (+)</option><option value="out">Expense (\u2212)</option></select></label>
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">Add entry</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.label){d.amt=+d.amt;state.treasury.ledger.push({id:uid(),...d});}closeModal();save();};
+}
+function contractModal(id){
+  const q=id?state.contracts.find(x=>x.id===id):{};
+  const opts=['Active','Lead','Done'].map(s=>`<option ${q.status===s?'selected':''}>${s}</option>`).join('');
+  openModal(`<h3>${id?'Edit job':'Post a job'}</h3>${fld('Title','title',q.title)}
+    <label class="fld"><span class="lbl">Status</span><select data-f="status">${opts}</select></label>
+    ${fld('Reward','reward',q.reward)}${area('Notes','note',q.note)}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">${id?'Save':'Post it'}</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.title){ if(id)Object.assign(q,d); else state.contracts.push({id:uid(),...d}); } closeModal();save();};
+}
+function contactModal(id){
+  const n=id?state.contacts.find(x=>x.id===id):{};
+  const rel=n.rel||'neutral';
+  const opt=(v,l)=>`<option value="${v}" ${rel===v?'selected':''}>${l}</option>`;
+  openModal(`<h3>${id?'Edit contact':'Add contact'}</h3>${fld('Name','name',n.name)}${fld('Role / title','role',n.role)}
+    <label class="fld"><span class="lbl">Relationship</span><select data-f="rel">${opt('ally','Ally')}${opt('neutral','Neutral')}${opt('enemy','Enemy')}</select></label>
+    ${area('Notes','note',n.note)}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">${id?'Save':'Add contact'}</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.name){ if(id)Object.assign(n,d); else state.contacts.push({id:uid(),...d}); } closeModal();save();};
+}
+function quoteModal(){
+  openModal(`<h3>Add a quote</h3>${area('The cursed thing that was said','text')}${fld('Who said it','by')}
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">Enshrine it</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.text)state.quotes.unshift({id:uid(),...d});closeModal();save();};
+}
+function suggestModal(id){
+  const s=id?(state.suggestions||[]).find(x=>x.id===id):{};
+  const opts=['Idea','Building','Done'].map(v=>`<option ${s.status===v?'selected':''}>${v}</option>`).join('');
+  openModal(`<h3>${id?'Edit idea':'Add idea'}</h3>${area('The idea','text',s.text)}${fld('Your name (optional)','by',s.by)}
+    <label class="fld"><span class="lbl">Status</span><select data-f="status">${opts}</select></label>
+    <div class="row spread" style="margin-top:8px"><button class="btn ghost" data-close>Cancel</button><button class="btn gold" id="s">${id?'Save':'Add'}</button></div>`);
+  modal.querySelector('#s').onclick=()=>{const d=collect();if(d.text){ if(!d.status)d.status='Idea'; if(id)Object.assign(s,d); else { state.suggestions=state.suggestions||[]; state.suggestions.push({id:uid(),...d}); } } closeModal();save();};
+}
+</script>
+</body>
+</html>
