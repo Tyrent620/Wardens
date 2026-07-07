@@ -52,8 +52,7 @@
   .status .v{font-family:var(--disp);color:var(--foam);font-size:1.06rem;margin-top:3px}
 
   nav.tabs{position:sticky;top:0;z-index:30;background:rgba(6,20,33,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-  .tabrow{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
-  .tabrow::-webkit-scrollbar{display:none}
+  .tabrow{display:flex;gap:2px;flex-wrap:wrap}
   .tab{flex:none;background:none;border:none;color:var(--muted);font-family:var(--disp);font-size:.86rem;letter-spacing:.06em;padding:15px 16px;cursor:pointer;position:relative;white-space:nowrap;transition:color .18s}
   .tab:hover{color:var(--parchment)}
   .tab.active{color:var(--foam)}
@@ -211,7 +210,7 @@
 
 <nav class="tabs"><div class="wrap tabrow" id="tabrow"></div></nav>
 <main class="wrap" id="main"></main>
-<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 5</span></footer>
+<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 6</span></footer>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="save-flash" id="saveFlash">✓ Saved to the guild ledger</div>
