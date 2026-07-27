@@ -31,7 +31,7 @@
   }
   a{color:var(--verdigris);text-decoration:none} a:hover{color:var(--brass)}
   h1,h2,h3{font-family:var(--disp);font-weight:600;color:var(--foam);letter-spacing:.02em;margin:0}
-  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+  .wrap{max-width:1480px;margin:0 auto;padding:0 22px}
   .mono{font-family:var(--mono)}
   .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.34em;text-transform:uppercase;color:var(--brass)}
 
@@ -63,7 +63,7 @@
   .tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:linear-gradient(90deg,var(--brass),var(--verdigris))}
 
   main{padding:34px 0 90px;min-height:60vh}
-  #searchWrap{position:relative;max-width:1120px;margin:20px auto 0;padding:0 22px}
+  #searchWrap{position:relative;max-width:1480px;margin:20px auto 0;padding:0 22px}
   #searchBox{width:100%}
   #searchResults{position:absolute;left:22px;right:22px;top:100%;z-index:25;background:linear-gradient(180deg,var(--deep),var(--abyss));border:1px solid var(--line);border-radius:12px;margin-top:6px;max-height:60vh;overflow:auto;box-shadow:var(--shadow);display:none}
   #searchResults.on{display:block}
@@ -157,7 +157,7 @@
   .qnote .q-actions button:hover{background:rgba(40,26,16,.18)}
 
   .cork-wrap{overflow:auto;border-radius:12px;border:7px solid #33240f;box-shadow:inset 0 0 40px rgba(0,0,0,.4),var(--shadow);max-width:100%}
-  .cork{position:relative;width:920px;height:660px;
+  .cork{position:relative;width:1180px;height:680px;
     background-image:
       radial-gradient(rgba(90,60,28,.22) 1px, transparent 1.7px),
       radial-gradient(rgba(90,60,28,.15) 1px, transparent 1.7px),
@@ -205,8 +205,9 @@
   .rd-label::before,.rd-label::after{content:"\25c6";font-size:.42rem;color:var(--brass);opacity:.65}
   .rd-count{color:var(--muted);font-family:var(--mono);font-size:.62rem;letter-spacing:.08em}
 
-  .founder-card{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;padding:20px 22px;border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:14px;margin-bottom:16px;position:relative;transition:.2s;box-shadow:var(--shadow);
+  .founder-card{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;padding:20px 22px;border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:14px;position:relative;transition:.2s;box-shadow:var(--shadow);
     background:linear-gradient(140deg, rgba(13,36,56,.72), rgba(7,22,37,.84))}
+  .fc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px}
   .founder-card:hover{border-color:rgba(198,154,76,.42);transform:translateY(-2px)}
   .fc-portrait{flex:none;position:relative;width:104px;height:104px}
   .avatar-lg{width:104px;height:104px;border-radius:50%;background-size:cover;background-position:center;background-color:var(--deep);border:2px solid var(--brass);box-shadow:0 0 0 4px rgba(198,154,76,.13),0 8px 20px -6px rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:2rem;color:var(--brass)}
@@ -385,11 +386,11 @@
 
 <nav class="tabs"><div class="wrap tabrow" id="tabrow"></div></nav>
 <div class="wrap" id="searchWrap">
-  <input id="searchBox" placeholder="Search the whole hub \u2014 NPCs, leads, items, quotes\u2026" autocomplete="off">
+  <input id="searchBox" placeholder="Search the whole hub — NPCs, leads, items, quotes…" autocomplete="off">
   <div id="searchResults"></div>
 </div>
 <main class="wrap" id="main"></main>
-<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 22</span></footer>
+<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 23</span></footer>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="save-flash" id="saveFlash">✓ Saved to the guild ledger</div>
@@ -902,7 +903,7 @@ function factionLogo(name){
   if(n.includes('zhent')||n.includes('black network')) return 'faction-zhentarim.png';
   if(n.includes('xanathar')) return 'faction-xanathar.png';
   if(n.includes('bregan')) return 'faction-bregan.png';
-  if(n.includes('lords')||n.includes('alliance')) return 'faction-lords.png';
+  if(n.includes('lords')||n.includes('alliance')) return 'faction-lords-alliance.png';
   return 'faction-'+n.replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';
 }
 function factionAccent(name){
@@ -1146,7 +1147,7 @@ function renderGuild(){
     body+=`<div class="rank-divider"><span class="rd-label">${r}${list.length>1?'s':''} <span class="rd-count">\u00b7 ${list.length}</span></span></div>`;
     const detailed=list.filter(m=>m.cls||m.ancestry);
     const simple=list.filter(m=>!(m.cls||m.ancestry));
-    body+=detailed.map(founderCard).join('');
+    body+=`<div class="fc-list">`+detailed.map(founderCard).join('')+`</div>`;
     if(simple.length) body+=`<div class="grid g3"${detailed.length?' style="margin-top:14px"':''}>`+simple.map(memberCard).join('')+`</div>`;
   });
   if(!members.length) body=`<div class="empty" style="margin-top:20px">No members yet. Add the Wardens, their hirelings, and sworn allies.</div>`;
