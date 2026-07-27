@@ -157,7 +157,7 @@
   .qnote .q-actions button:hover{background:rgba(40,26,16,.18)}
 
   .cork-wrap{overflow:auto;border-radius:12px;border:7px solid #33240f;box-shadow:inset 0 0 40px rgba(0,0,0,.4),var(--shadow);max-width:100%}
-  .cork{position:relative;width:1180px;height:680px;
+  .cork{position:relative;width:100%;min-width:100%;min-height:820px;
     background-image:
       radial-gradient(rgba(90,60,28,.22) 1px, transparent 1.7px),
       radial-gradient(rgba(90,60,28,.15) 1px, transparent 1.7px),
@@ -167,7 +167,7 @@
     background-position:0 0, 7px 10px, 0 0, 0 0}
   .cork-strings{position:absolute;top:0;left:0;pointer-events:none;overflow:visible;z-index:1}
   .cork-strings path{stroke:#b23b2a;stroke-width:2.5;fill:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
-  .cnode{position:absolute;width:150px;background:#f6efdd;color:#241a10;border-radius:3px;padding:11px 10px 8px;box-shadow:0 9px 16px -6px rgba(0,0,0,.6);cursor:grab;user-select:none;transform:rotate(var(--r,0deg));z-index:2;touch-action:none}
+  .cnode{position:absolute;width:172px;background:#f6efdd;color:#241a10;border-radius:3px;padding:12px 12px 9px;box-shadow:0 9px 16px -6px rgba(0,0,0,.6);cursor:grab;user-select:none;transform:rotate(var(--r,0deg));z-index:2;touch-action:none}
   .cnode:active{cursor:grabbing}
   .cnode.linking{outline:2px solid #b23b2a;outline-offset:3px}
   .cnode::before{content:"";position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;box-shadow:0 2px 3px rgba(0,0,0,.5);background:radial-gradient(circle at 35% 30%,#e05a3a,#7d2414)}
@@ -390,7 +390,7 @@
   <div id="searchResults"></div>
 </div>
 <main class="wrap" id="main"></main>
-<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 23</span></footer>
+<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 24</span></footer>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="save-flash" id="saveFlash">✓ Saved to the guild ledger</div>
@@ -801,14 +801,16 @@ function renderChronicle(){
 }
 function renderLeads(){
   const cb=state.corkboard||{nodes:[],links:[]};
+  const maxY=Math.max(0,...(cb.nodes||[]).map(n=>(+n.y||0)));
+  const boardH=Math.max(820, Math.round(maxY)+260);
   const nodes=(cb.nodes||[]).map(n=>`<div class="cnode k-${esc(n.kind||'clue')}" data-node="${esc(n.id)}" style="left:${(+n.x||20)}px;top:${(+n.y||20)}px;--r:${(+n.r||0)}deg">
       <div class="cn-title">${esc(n.label)}</div>
       ${n.note?`<div class="cn-note">${esc(n.note)}</div>`:''}
       <div class="cn-bar"><button data-link-node="${esc(n.id)}" title="Draw a string to another card">\u2194 Link</button><button data-edit-node="${esc(n.id)}">Edit</button><button data-del-node="${esc(n.id)}">\u2715</button></div>
     </div>`).join('');
   return head('The Case Board','Drag the cards to arrange them. Hit \u201cLink\u201d on a card, then click another to run a string between them \u2014 build the conspiracy. Click a string\u2019s red knot to cut it.',
-    `<button class="btn gold" data-add-node>+ Add card</button>`)+
-    `<div class="cork-wrap"><div class="cork" id="cork">
+    `<div class="row"><button class="btn sm" data-tidy-cork title="Spread the cards evenly across the board">\u2795 Tidy</button><button class="btn gold" data-add-node>+ Add card</button></div>`)+
+    `<div class="cork-wrap"><div class="cork" id="cork" style="height:${boardH}px">
        <svg class="cork-strings" id="corkStrings"></svg>${nodes}
      </div></div>`;
 }
@@ -849,6 +851,21 @@ function initCork(){
   cork.querySelectorAll('[data-del-node]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.delNode; cb.nodes=(cb.nodes||[]).filter(n=>n.id!==id); cb.links=(cb.links||[]).filter(l=>l.a!==id&&l.b!==id); save(); });
   cork.addEventListener('pointerdown',e=>{ if(linkMode && !e.target.closest('.cnode')) cancelLink(); });
   const addBtn=document.querySelector('[data-add-node]'); if(addBtn) addBtn.onclick=()=>nodeModal();
+  const tidyBtn=document.querySelector('[data-tidy-cork]'); if(tidyBtn) tidyBtn.onclick=()=>tidyCork();
+}
+function tidyCork(){
+  const cork=document.getElementById('cork'); const cb=state.corkboard; if(!cork||!cb||!cb.nodes) return;
+  const W=cork.clientWidth, cardW=172, gapX=30, gapY=22, padX=26, padY=24;
+  const cols=Math.max(1, Math.floor((W-padX*2+gapX)/(cardW+gapX)));
+  const colH=new Array(cols).fill(padY);
+  cb.nodes.forEach(n=>{
+    const el=cork.querySelector('.cnode[data-node="'+n.id+'"]');
+    const h=el?el.offsetHeight:150;
+    let ci=0; for(let k=1;k<cols;k++){ if(colH[k]<colH[ci]) ci=k; }
+    n.x=padX + ci*(cardW+gapX); n.y=colH[ci]; n.r=0;
+    colH[ci]+=h+gapY;
+  });
+  save();
 }
 let linkMode=null;
 function startLink(id){ cancelLink(); linkMode=id; const el=document.querySelector('.cnode[data-node="'+id+'"]'); if(el) el.classList.add('linking'); }
