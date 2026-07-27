@@ -138,8 +138,8 @@
   .qb-sign{display:block;text-align:center;font-family:var(--disp);letter-spacing:.26em;font-size:.86rem;color:#f0e2c2;background:linear-gradient(180deg,#4a3320,#2a1c10);border:2px solid #170f08;border-radius:6px;padding:9px 16px;margin:0 auto 22px;max-width:360px;box-shadow:0 5px 12px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07)}
   .rivet{position:absolute;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#9a8a70,#2c1e10);box-shadow:0 1px 2px rgba(0,0,0,.6),inset 0 1px 1px rgba(255,255,255,.15);z-index:1}
   .rivet.r1{top:9px;left:9px}.rivet.r2{top:9px;right:9px}.rivet.r3{bottom:9px;left:9px}.rivet.r4{bottom:9px;right:9px}
-  .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
-  .qnote{background:#f2ead3;color:#241a10;border-radius:3px;padding:16px 14px 12px;position:relative;box-shadow:0 12px 20px -8px rgba(0,0,0,.7);transform:rotate(var(--r,-1deg));transition:.18s}
+  .qgrid{column-width:250px;column-gap:20px}
+  .qnote{background:#f2ead3;color:#241a10;border-radius:3px;padding:16px 14px 12px;position:relative;box-shadow:0 12px 20px -8px rgba(0,0,0,.7);transform:rotate(var(--r,-1deg));transition:.18s;break-inside:avoid;-webkit-column-break-inside:avoid;width:100%;margin:0 0 20px;display:inline-block;vertical-align:top}
   .qnote:hover{transform:rotate(0) translateY(-3px)}
   .qnote::before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e05a3a,#7d2414);box-shadow:0 2px 3px rgba(0,0,0,.5)}
   .qnote.st-Assigned::before{background:radial-gradient(circle at 35% 30%,#5bb0e0,#1d5a7d)}
@@ -391,7 +391,7 @@
   <div id="searchResults"></div>
 </div>
 <main class="wrap" id="main"></main>
-<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 25</span></footer>
+<footer class="wrap">Wardens of the Deep · a home base for our crew. <span id="storeNote" style="color:var(--verdigris)"></span> <span style="opacity:.45">· build 26</span></footer>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div class="save-flash" id="saveFlash">✓ Saved to the guild ledger</div>
